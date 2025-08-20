@@ -1,0 +1,1074 @@
+{
+	"info": {
+		"_postman_id": "b10fc905-f937-4e93-b8b7-2910082cb55b",
+		"name": "NPCL Dashboard APIs",
+		"description": "Comprehensive API collection for NPCL Dashboard - A power management system with role-based authentication, voicebot call tracking, and dashboard analytics.\n\n## Authentication\nThis API uses NextAuth.js for session-based authentication. After signing in, session cookies are automatically managed.\n\n## Base URL\nDevelopment: http://localhost:3000\nProduction: Set {{baseUrl}} variable accordingly\n\n## Test Accounts\n- Admin: admin@npcl.com / admin123\n- Operator: operator@npcl.com / operator123\n- Viewer: viewer@npcl.com / viewer123",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "45768621"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "NextAuth Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Test for successful login",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"// Save session cookie if present",
+									"if (pm.response.headers.get('Set-Cookie')) {",
+									"    pm.globals.set('sessionCookie', pm.response.headers.get('Set-Cookie'));",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "email",
+									"value": "admin@npcl.com",
+									"description": "User email address",
+									"type": "text"
+								},
+								{
+									"key": "password",
+									"value": "admin123",
+									"description": "User password",
+									"type": "text"
+								},
+								{
+									"key": "redirect",
+									"value": "false",
+									"description": "Prevent automatic redirect",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signin/credentials",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signin",
+								"credentials"
+							]
+						},
+						"description": "Sign in using NextAuth.js credentials provider. This sets a session cookie for subsequent authenticated requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Session",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/session",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"session"
+							]
+						},
+						"description": "Get current NextAuth.js session information. Returns user data if authenticated."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Session",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/verify",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"verify"
+							]
+						},
+						"description": "Verify current session and get detailed user information including audit log count and role permissions."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "callbackUrl",
+									"value": "{{baseUrl}}",
+									"description": "URL to redirect after logout",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signout",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signout"
+							]
+						},
+						"description": "Sign out using NextAuth.js. Clears session cookie and redirects to callback URL."
+					},
+					"response": []
+				},
+				{
+					"name": "Register User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@npcl.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"role\": \"VIEWER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Register a new user account. Password must meet security requirements. Role defaults to VIEWER if not specified.\n\nAvailable roles: ADMIN, OPERATOR, VIEWER"
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@npcl.com\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/forgot-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"forgot-password"
+							]
+						},
+						"description": "Request password reset email. Always returns success message to prevent email enumeration attacks."
+					},
+					"response": []
+				},
+				{
+					"name": "Reset Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"token\": \"reset_token_from_email\",\n  \"newPassword\": \"NewSecurePass123!\",\n  \"confirmPassword\": \"NewSecurePass123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/reset-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"reset-password"
+							]
+						},
+						"description": "Reset password using token from email. Token expires after 1 hour."
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Reset Token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/reset-password?token=reset_token_from_email",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"reset-password"
+							],
+							"query": [
+								{
+									"key": "token",
+									"value": "reset_token_from_email",
+									"description": "Reset token from email"
+								}
+							]
+						},
+						"description": "Verify if a password reset token is valid and not expired."
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"currentPassword\": \"CurrentPass123!\",\n  \"newPassword\": \"NewSecurePass123!\",\n  \"confirmNewPassword\": \"NewSecurePass123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/change-password",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"change-password"
+							]
+						},
+						"description": "Change password for authenticated user. Requires current password verification. Logs audit event."
+					},
+					"response": []
+				}
+			],
+			"description": "Authentication endpoints using NextAuth.js for secure session management"
+		},
+		{
+			"name": "User Management",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Get current user's profile information including audit log and report counts."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Profile",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Name\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Update current user's profile information. Currently supports name updates only."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User Profile",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/profile",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"profile"
+							]
+						},
+						"description": "Soft delete current user's account. Marks account as deleted and logs audit event."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users"
+							]
+						},
+						"description": "Get list of all users with their statistics. Requires ADMIN role."
+					},
+					"response": []
+				},
+				{
+					"name": "Create User (Admin)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"New User\",\n  \"email\": \"newuser@npcl.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\",\n  \"role\": \"OPERATOR\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/users",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users"
+							]
+						},
+						"description": "Create a new user account. Requires ADMIN role. Logs audit event."
+					},
+					"response": []
+				},
+				{
+					"name": "Get User by ID (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Get specific user details by ID. Requires ADMIN role."
+					},
+					"response": []
+				},
+				{
+					"name": "Update User (Admin)",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated User Name\",\n  \"email\": \"updated@npcl.com\",\n  \"role\": \"OPERATOR\",\n  \"password\": \"NewPassword123!\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Update user information. Requires ADMIN role. Prevents admin from demoting themselves. Logs audit event."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete User (Admin)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/users/{{userId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"users",
+								"{{userId}}"
+							]
+						},
+						"description": "Delete user account. Requires ADMIN role. Prevents admin from deleting themselves. Logs audit event."
+					},
+					"response": []
+				}
+			],
+			"description": "User management endpoints for profile and admin operations"
+		},
+		{
+			"name": "Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/dashboard/stats?timeRange=24h&includeOffline=true",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"dashboard",
+								"stats"
+							],
+							"query": [
+								{
+									"key": "timeRange",
+									"value": "24h",
+									"description": "Time range: 1h, 24h, 7d, 30d"
+								},
+								{
+									"key": "includeOffline",
+									"value": "true",
+									"description": "Include offline units in stats"
+								}
+							]
+						},
+						"description": "Get dashboard statistics including user counts, reports, audit logs, and voicebot calls. Supports time range filtering."
+					},
+					"response": []
+				}
+			],
+			"description": "Dashboard analytics and statistics endpoints"
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "Get Voicebot Calls",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/voicebot-calls?page=1&limit=10&language=en&callResolutionStatus=resolved",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reports",
+								"voicebot-calls"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number for pagination"
+								},
+								{
+									"key": "limit",
+									"value": "10",
+									"description": "Number of records per page"
+								},
+								{
+									"key": "language",
+									"value": "en",
+									"description": "Filter by language"
+								},
+								{
+									"key": "cli",
+									"value": "",
+									"description": "Filter by CLI number",
+									"disabled": true
+								},
+								{
+									"key": "callResolutionStatus",
+									"value": "resolved",
+									"description": "Filter by resolution status"
+								},
+								{
+									"key": "durationMin",
+									"value": "",
+									"description": "Minimum call duration in seconds",
+									"disabled": true
+								},
+								{
+									"key": "durationMax",
+									"value": "",
+									"description": "Maximum call duration in seconds",
+									"disabled": true
+								},
+								{
+									"key": "dateFrom",
+									"value": "",
+									"description": "Start date (YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "dateTo",
+									"value": "",
+									"description": "End date (YYYY-MM-DD)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get paginated list of voicebot calls with filtering options. Supports filtering by language, CLI, status, duration, and date range."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Voicebot Call by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/voicebot-calls/{{callId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reports",
+								"voicebot-calls",
+								"{{callId}}"
+							]
+						},
+						"description": "Get detailed information for a specific voicebot call by ID."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Filter Options",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/voicebot-calls/filters",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reports",
+								"voicebot-calls",
+								"filters"
+							]
+						},
+						"description": "Get available filter options for voicebot calls including languages and call resolution statuses."
+					},
+					"response": []
+				},
+				{
+					"name": "Export Voicebot Calls (CSV)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/voicebot-calls/exports?format=csv&language=en&dateFrom=2024-01-01&dateTo=2024-12-31",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reports",
+								"voicebot-calls",
+								"exports"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "csv",
+									"description": "Export format: csv, xlsx"
+								},
+								{
+									"key": "language",
+									"value": "en",
+									"description": "Filter by language"
+								},
+								{
+									"key": "cli",
+									"value": "",
+									"description": "Filter by CLI number",
+									"disabled": true
+								},
+								{
+									"key": "callResolutionStatus",
+									"value": "",
+									"description": "Filter by resolution status",
+									"disabled": true
+								},
+								{
+									"key": "durationMin",
+									"value": "",
+									"description": "Minimum call duration",
+									"disabled": true
+								},
+								{
+									"key": "durationMax",
+									"value": "",
+									"description": "Maximum call duration",
+									"disabled": true
+								},
+								{
+									"key": "dateFrom",
+									"value": "2024-01-01",
+									"description": "Start date (YYYY-MM-DD)"
+								},
+								{
+									"key": "dateTo",
+									"value": "2024-12-31",
+									"description": "End date (YYYY-MM-DD)"
+								}
+							]
+						},
+						"description": "Export voicebot calls data as CSV file with filtering options."
+					},
+					"response": []
+				},
+				{
+					"name": "Export Voicebot Calls (Excel)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/voicebot-calls/exports?format=xlsx&dateFrom=2024-01-01&dateTo=2024-12-31",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"reports",
+								"voicebot-calls",
+								"exports"
+							],
+							"query": [
+								{
+									"key": "format",
+									"value": "xlsx",
+									"description": "Export format: csv, xlsx"
+								},
+								{
+									"key": "language",
+									"value": "",
+									"description": "Filter by language",
+									"disabled": true
+								},
+								{
+									"key": "cli",
+									"value": "",
+									"description": "Filter by CLI number",
+									"disabled": true
+								},
+								{
+									"key": "callResolutionStatus",
+									"value": "",
+									"description": "Filter by resolution status",
+									"disabled": true
+								},
+								{
+									"key": "durationMin",
+									"value": "",
+									"description": "Minimum call duration",
+									"disabled": true
+								},
+								{
+									"key": "durationMax",
+									"value": "",
+									"description": "Maximum call duration",
+									"disabled": true
+								},
+								{
+									"key": "dateFrom",
+									"value": "2024-01-01",
+									"description": "Start date (YYYY-MM-DD)"
+								},
+								{
+									"key": "dateTo",
+									"value": "2024-12-31",
+									"description": "End date (YYYY-MM-DD)"
+								}
+							]
+						},
+						"description": "Export voicebot calls data as Excel file with filtering options."
+					},
+					"response": []
+				}
+			],
+			"description": "Report generation and data export endpoints for voicebot calls"
+		},
+		{
+			"name": "System",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Comprehensive health check including database connectivity, memory usage, and system status."
+					},
+					"response": []
+				},
+				{
+					"name": "Health Check (Lightweight)",
+					"request": {
+						"method": "HEAD",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health"
+							]
+						},
+						"description": "Lightweight health check for basic monitoring. Returns only HTTP status code."
+					},
+					"response": []
+				},
+				{
+					"name": "API Documentation",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/docs",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"docs"
+							]
+						},
+						"description": "Get comprehensive API documentation including authentication flow, endpoints, and examples."
+					},
+					"response": []
+				}
+			],
+			"description": "System monitoring and documentation endpoints"
+		},
+		{
+			"name": "Debug/Testing",
+			"item": [
+				{
+					"name": "Test Session",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/test-session",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"test-session"
+							]
+						},
+						"description": "Debug endpoint to test session authentication without side effects."
+					},
+					"response": []
+				},
+				{
+					"name": "Test Login",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@npcl.com\",\n  \"password\": \"admin123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/test-login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"test-login"
+							]
+						},
+						"description": "Debug endpoint to test credentials without creating a session."
+					},
+					"response": []
+				}
+			],
+			"description": "Debug and testing endpoints for development"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Auto-set common headers",
+					"pm.request.headers.add({",
+					"    key: 'User-Agent',",
+					"    value: 'NPCL-Dashboard-API-Client/1.0'",
+					"});"
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global test for response time",
+					"pm.test('Response time is less than 5000ms', function () {",
+					"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+					"});",
+					"",
+					"// Global test for JSON response",
+					"if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
+					"    pm.test('Response is valid JSON', function () {",
+					"        pm.response.to.be.json;",
+					"    });",
+					"}"
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "userId",
+			"value": "1",
+			"description": "User ID for testing user management endpoints",
+			"type": "string"
+		},
+		{
+			"key": "callId",
+			"value": "1",
+			"description": "Voicebot call ID for testing report endpoints",
+			"type": "string"
+		}
+	]
+}

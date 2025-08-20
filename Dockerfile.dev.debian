@@ -1,0 +1,65 @@
+# Alternative Dockerfile using Debian-based image for better Prisma compatibility
+# Use this if Alpine Linux continues to have OpenSSL issues
+
+# Stage 1: Dependencies and Prisma Generation
+FROM node:18-slim AS builder
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    netcat-traditional \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Copy application files to this stage
+COPY package.json package-lock.json* ./
+COPY . .
+
+# Install all dependencies (including dev dependencies for tooling)
+RUN npm ci
+
+# Generate the Prisma client. This step is critical to happen after dependencies are installed.
+RUN npx prisma generate
+
+# Stage 2: Development Runtime
+FROM node:18-slim
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    postgresql-client \
+    netcat-traditional \
+    openssl \
+    ca-certificates \
+    bash \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set the working directory
+WORKDIR /app
+
+# Copy built files and runtime dependencies from the builder stage
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/. ./
+
+# Copy and make startup script executable
+COPY scripts/docker/startup-dev.sh ./startup-dev.sh
+RUN chmod +x ./startup-dev.sh
+
+# Expose the port for the development server
+EXPOSE 3000
+
+# Set environment variables for Next.js
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Define a robust healthcheck for the container
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Command to start the application using the startup script
+CMD ["/bin/bash", "./startup-dev.sh"]

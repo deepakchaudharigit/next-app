@@ -1,0 +1,36 @@
+# Qodo Agent Configuration for the NPCL Next.js Project
+
+# Agent's core identity and purpose.
+# This is the first thing the agent reads to understand its role.
+[agent]
+name = "NPCL Code Fixer and Documenter"
+description = "An AI agent that reads errors from errors.txt, applies fixes to the codebase, and documents the changes in docs/README.md."
+
+# Defines the primary task or "goal" for the agent.
+# This directly translates your prompt's instructions.
+[[goal]]
+name = "Fix and Document Errors from File"
+instructions = """
+1.  Your ONLY task is to address the errors listed in the `errors.txt` file located in the project root. Do not perform any other analysis or suggest unrelated changes.
+2.  Start by reading and parsing the contents of `errors.txt`.
+3.  For each error described in the file, locate the corresponding file and line number in the codebase.
+4.  Implement the necessary code changes to resolve each error directly.
+5.  **After applying the fixes, update the `docs/README.md` file. Append a new section titled 'Recent Code Fixes - (Current Date)' and list each file that was changed with a brief description of the fix.**
+6.  Finally, provide a brief, bulleted summary in the console of the changes you made, confirming that the documentation has been updated.
+"""
+
+# Provides essential context to the agent to speed up its analysis.
+# It doesn't have to guess the tech stack; it knows it instantly.
+[context]
+framework = "Next.js (App Router)"
+language = "TypeScript"
+authentication = "NextAuth.js"
+database = "Prisma with PostgreSQL"
+file_to_process = "errors.txt"
+documentation_file = "docs/README.md"
+
+# Optional: You can define custom commands or "tools" the agent can use.
+# This tells the agent that it is allowed to read and write files.
+[tools]
+allow_file_system_read = true
+allow_file_system_write = true
