@@ -92,13 +92,17 @@ COPY --from=builder /app/scripts ./scripts
 COPY scripts/docker/startup.sh ./startup.sh
 RUN chmod +x ./startup.sh
 
-# Create necessary Next.js directories with proper permissions
-RUN mkdir -p ./.next/cache ./.next/server ./.next/static
+# Create necessary directories with proper permissions
+RUN mkdir -p ./.next/cache ./.next/server ./.next/static ./uploads ./logs
 
 # Set correct permissions for all files and directories
 RUN chown -R nextjs:nodejs /app
 RUN chmod -R 755 /app
+
+# Ensure .next directory has full write permissions for development mode
 RUN chmod -R 777 ./.next
+RUN chmod -R 777 ./uploads
+RUN chmod -R 777 ./logs
 
 USER nextjs
 

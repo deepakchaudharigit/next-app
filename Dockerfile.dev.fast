@@ -1,19 +1,9 @@
-# NPCL Dashboard Development Dockerfile - Optimized Version
-# Uses alpine-based Node.js for smaller size and faster downloads
+# NPCL Dashboard Development Dockerfile - Fast Build Version
+# Uses node:18 (full image) instead of slim for faster builds
 
-FROM node:18-alpine
+FROM node:18
 
-# Install system dependencies for alpine
-RUN apk add --no-cache \
-    postgresql-client \
-    openssl \
-    curl \
-    python3 \
-    make \
-    g++ \
-    bash \
-    && rm -rf /var/cache/apk/*
-
+# Set working directory
 WORKDIR /app
 
 # Create directories and set ownership

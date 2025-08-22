@@ -107,6 +107,17 @@ seed_database() {
 start_application() {
     echo "🎯 Starting NPCL Dashboard application..."
     
+    # Ensure .next directory exists with proper permissions
+    echo "   Setting up .next directory permissions..."
+    mkdir -p ./.next/cache ./.next/server ./.next/static
+    chmod -R 777 ./.next
+    
+    # Run permission test
+    if [ -f "./scripts/docker/test-permissions.sh" ]; then
+        echo "   Running permission test..."
+        bash ./scripts/docker/test-permissions.sh
+    fi
+    
     if [ "$NODE_ENV" = "development" ]; then
         echo "   Starting in development mode..."
         exec npm run dev

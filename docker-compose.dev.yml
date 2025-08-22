@@ -26,6 +26,9 @@ services:
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
       - DEBUG=${DEBUG:-false}
+      - NPM_CONFIG_AUDIT=false
+      - NPM_CONFIG_FUND=false
+      - NPM_CONFIG_LOGLEVEL=warn
       # Prisma engine paths for Debian/glibc (auto-detected, but can be explicit)
       # - PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/.prisma/client/libquery_engine-debian-openssl-1.1.x.so.node
       # - PRISMA_QUERY_ENGINE_BINARY=/app/node_modules/.prisma/client/query-engine-debian-openssl-1.1.x
@@ -39,7 +42,8 @@ services:
       - /app/.next
       - ./uploads:/app/uploads
       - dev_logs:/app/logs
-    command: ["/bin/bash", "./scripts/docker/startup-dev-simple.sh"]
+    # Use startup script or fallback to direct npm command
+    command: ["/bin/bash", "-c", "chmod +x ./scripts/docker/startup-dev-simple.sh && ./scripts/docker/startup-dev-simple.sh || npm run dev"]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health || exit 1"]
       interval: 30s
