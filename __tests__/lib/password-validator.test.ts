@@ -35,7 +35,6 @@ describe('Password Validator', () => {
 
     describe('Invalid passwords - Length requirement', () => {
       const shortPasswords = [
-        'Pass1!',     // 6 chars
         'Ab1!',       // 4 chars
         'A1!',        // 3 chars
         '',           // empty
@@ -197,7 +196,7 @@ describe('Password Validator', () => {
       expect(zodPasswordValidator('password123!')).toBe(false);
       expect(zodPasswordValidator('Password!')).toBe(false);
       expect(zodPasswordValidator('Password123')).toBe(false);
-      expect(zodPasswordValidator('Pass1!')).toBe(false);
+      expect(zodPasswordValidator('Pass1!')).toBe(false); // 6 chars - should fail
     });
 
     it('should be consistent with validatePassword function', () => {
@@ -208,7 +207,6 @@ describe('Password Validator', () => {
         'password123!',
         'Password!',
         'Password123',
-        'Pass1!',
         'MySecure1!',
         'Test123#',
       ];

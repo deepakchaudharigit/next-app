@@ -16,7 +16,11 @@ export const loginSchema = z.object({
       const username = val.split('@')[0]
       return username && username.length >= 4
     }, 'Email username must contain at least 4 characters before @'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string()
+    .min(1, 'Password is required')
+    .refine(zodPasswordValidator, {
+      message: 'Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)'
+    }),
 })
 
 export const registerSchema = z.object({
@@ -79,7 +83,7 @@ export const resetPasswordSchema = z.object({
     .refine(zodPasswordValidator, {
       message: 'Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)'
     }),
-  confirmNewPassword: z.string().min(6, 'Please confirm your new password'),
+  confirmNewPassword: z.string().min(8, 'Please confirm your new password'),
 }).refine(data => data.newPassword === data.confirmNewPassword, {
   message: 'Passwords do not match',
   path: ['confirmNewPassword'],
@@ -88,7 +92,7 @@ export const resetPasswordSchema = z.object({
 
 
 export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(6, 'Current password is required'),
+  currentPassword: z.string().min(8, 'Current password is required'),
   newPassword: z.string()
     .min(1, 'New password is required')
     .refine(zodPasswordValidator, {

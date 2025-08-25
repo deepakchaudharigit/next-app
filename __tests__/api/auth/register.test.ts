@@ -410,7 +410,7 @@ describe('POST /api/auth/register', () => {
         method: 'POST',
         body: {
           ...baseValidUser,
-          password: 'Pass1!', // Only 6 characters
+          password: 'Pass1!', // Only 6 characters - should fail 8-char requirement
         },
       })
 

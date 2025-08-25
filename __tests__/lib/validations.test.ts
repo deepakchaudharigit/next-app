@@ -13,33 +13,33 @@ describe("Validation Schemas", () => {
   describe("loginSchema", () => {
     const validData = {
       email: "test@example.com",
-      password: "password123", // Note: login still uses old 6-char minimum
+      password: "Password@123", // Updated to meet 8-character secure requirements
     };
 
     const invalidCases = [
       {
-        data: { email: "", password: "password123" },
+        data: { email: "", password: "Password@123" },
         expectedErrors: ["Invalid email address"],
       },
       {
-        data: { email: "invalid-email", password: "password123" },
+        data: { email: "invalid-email", password: "Password@123" },
         expectedErrors: ["Invalid email address"],
       },
       {
-        data: { email: "abc@example.com", password: "password123" },
+        data: { email: "abc@example.com", password: "Password@123" },
         expectedErrors: ["Email username must contain at least 4 characters before @"],
       },
       {
-        data: { email: "a@example.com", password: "password123" },
+        data: { email: "a@example.com", password: "Password@123" },
         expectedErrors: ["Email username must contain at least 4 characters before @"],
       },
       {
         data: { email: "test@example.com", password: "" },
-        expectedErrors: ["Password must be at least 6 characters"],
+        expectedErrors: ["Password is required"],
       },
       {
         data: { email: "test@example.com", password: "12345" },
-        expectedErrors: ["Password must be at least 6 characters"],
+        expectedErrors: ["Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)"],
       },
     ];
 
@@ -177,10 +177,10 @@ describe("Validation Schemas", () => {
   describe("Email username validation", () => {
     it("should accept emails with exactly 4 characters before @", () => {
       const testCases = [
-        { email: "abcd@gmail.com", password: "password123" },
-        { email: "test@example.com", password: "password123" },
-        { email: "user@domain.org", password: "password123" },
-        { email: "admin@company.co", password: "password123" },
+        { email: "abcd@gmail.com", password: "Password@123" },
+        { email: "test@example.com", password: "Password@123" },
+        { email: "user@domain.org", password: "Password@123" },
+        { email: "admin@company.co", password: "Password@123" },
       ];
 
       testCases.forEach(testCase => {
@@ -191,10 +191,10 @@ describe("Validation Schemas", () => {
 
     it("should reject emails with fewer than 4 characters before @", () => {
       const testCases = [
-        { email: "abc@gmail.com", password: "password123" },
-        { email: "ab@example.com", password: "password123" },
-        { email: "a@domain.org", password: "password123" },
-        { email: "x@company.co", password: "password123" },
+        { email: "abc@gmail.com", password: "Password@123" },
+        { email: "ab@example.com", password: "Password@123" },
+        { email: "a@domain.org", password: "Password@123" },
+        { email: "x@company.co", password: "Password@123" },
       ];
 
       testCases.forEach(testCase => {
@@ -210,9 +210,9 @@ describe("Validation Schemas", () => {
 
     it("should accept emails with more than 4 characters before @", () => {
       const testCases = [
-        { email: "abcde@gmail.com", password: "password123" },
-        { email: "testuser@example.com", password: "password123" },
-        { email: "administrator@domain.org", password: "password123" },
+        { email: "abcde@gmail.com", password: "Password@123" },
+        { email: "testuser@example.com", password: "Password@123" },
+        { email: "administrator@domain.org", password: "Password@123" },
       ];
 
       testCases.forEach(testCase => {
