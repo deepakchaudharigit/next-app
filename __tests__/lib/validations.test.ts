@@ -13,7 +13,7 @@ describe("Validation Schemas", () => {
   describe("loginSchema", () => {
     const validData = {
       email: "test@example.com",
-      password: "password123",
+      password: "password123", // Note: login still uses old 6-char minimum
     };
 
     const invalidCases = [
@@ -50,7 +50,7 @@ describe("Validation Schemas", () => {
     const validData = {
       name: "John Doe",
       email: "john@example.com",
-      password: "password123",
+      password: "Password@123", // Updated to meet new requirements
       role: UserRole.VIEWER,
     };
 
@@ -73,7 +73,23 @@ describe("Validation Schemas", () => {
       },
       {
         data: { ...validData, password: "12345" },
-        expectedErrors: ["Password must be at least 6 characters"],
+        expectedErrors: ["Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)"],
+      },
+      {
+        data: { ...validData, password: "password123" },
+        expectedErrors: ["Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)"],
+      },
+      {
+        data: { ...validData, password: "PASSWORD123!" },
+        expectedErrors: ["Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)"],
+      },
+      {
+        data: { ...validData, password: "Password!" },
+        expectedErrors: ["Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)"],
+      },
+      {
+        data: { ...validData, password: "Password123" },
+        expectedErrors: ["Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)"],
       },
     ];
 
@@ -83,7 +99,7 @@ describe("Validation Schemas", () => {
       const dataWithoutRole = {
         name: "John Doe",
         email: "john@example.com",
-        password: "password123",
+        password: "Password@123", // Updated to meet new requirements
       };
       const result = registerSchema.safeParse(dataWithoutRole);
       expect(result.success).toBe(true);

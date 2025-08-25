@@ -1,33 +1,8 @@
 {
   "name": "npcl-dashboard",
   "version": "1.0.0",
-  "private": true,
   "description": "NPCL Power Management Dashboard",
-  "keywords": [
-    "next.js",
-    "typescript",
-    "zod",
-    "prisma",
-    "postgresql",
-    "docker",
-    "redis"
-  ],
-  "homepage": "https://github.com/deepakchaudharigit/next-app#readme",
-  "bugs": {
-    "url": "https://github.com/deepakchaudharigit/next-app/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/deepakchaudharigit/next-app.git"
-  },
-  "license": "ISC",
-  "author": "Deepak Chaudhari",
-  "type": "module",
-  "main": "next.config.js",
-  "directories": {
-    "doc": "docs",
-    "lib": "lib"
-  },
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "dev:inspect": "cross-env NODE_OPTIONS='--inspect' next dev",
@@ -85,8 +60,7 @@
     "docker:shell": "docker-compose exec app sh",
     "docker:shell:db": "docker-compose exec postgres psql -U postgres -d npcl-auth-db",
     "docker:clean": "docker-compose down -v && docker system prune -f",
-    "docker:fix": "bash fix-docker-issues.sh",
-    "docker:validate": "bash scripts/docker/validate-fixes.sh",
+    "docker:fix": "bash fix-docker-complete.sh",
     "docker:studio": "bash run-prisma-studio.sh",
     "docker:switch:alpine": "bash scripts/docker/switch-dockerfile.sh alpine",
     "docker:switch:debian": "bash scripts/docker/switch-dockerfile.sh debian",

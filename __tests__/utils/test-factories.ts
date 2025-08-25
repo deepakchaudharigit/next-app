@@ -2,7 +2,6 @@ import {
   User,
   UserRole,
 } from "@prisma/client";
-import { testFormValidation } from "../utils/test-helpers.utils";
 
 // ────────────────
 // Type definitions for better type safety
@@ -141,61 +140,5 @@ export const createMockApiResponse = <T>(data: T, success = true): MockApiRespon
   error: success ? undefined : "Test error",
 });
 
-// ────────────────
-// Jest Test Coverage
-// ────────────────
-
-describe("Test Factories", () => {
-  test("should create mock user with default values", () => {
-    const user = createMockUser();
-    expect(user).toHaveProperty("id");
-    expect(user).toHaveProperty("email");
-    expect(user).toHaveProperty("role");
-    expect(user.role).toBe(UserRole.VIEWER);
-  });
-
-  test("should create mock admin user", () => {
-    const admin = createMockAdmin();
-    expect(admin.role).toBe(UserRole.ADMIN);
-    expect(admin.email).toBe("admin@example.com");
-  });
-
-  test("should create multiple mock users", () => {
-    const users = createMockUsers(3);
-    expect(users).toHaveLength(3);
-    expect(users[0]?.id).toBe("user-1");
-    expect(users[1]?.id).toBe("user-2");
-    expect(users[2]?.id).toBe("user-3");
-  });
-
-  test("should create mock session with proper structure", () => {
-    const session = createMockSession();
-    expect(session).toHaveProperty("user");
-    expect(session).toHaveProperty("expires");
-    expect(session.user).toHaveProperty("id");
-    expect(session.user).toHaveProperty("role");
-  });
-
-  test("should create mock token with proper structure", () => {
-    const token = createMockToken();
-    expect(token).toHaveProperty("id");
-    expect(token).toHaveProperty("iat");
-    expect(token).toHaveProperty("exp");
-    expect(typeof token.iat).toBe("number");
-    expect(typeof token.exp).toBe("number");
-  });
-
-  test("should create mock API response", () => {
-    const response = createMockApiResponse({ id: "test" });
-    expect(response.success).toBe(true);
-    expect(response.data).toEqual({ id: "test" });
-    expect(response.message).toBe("Operation successful");
-  });
-
-  test("should create mock API error response", () => {
-    const response = createMockApiResponse(null, false);
-    expect(response.success).toBe(false);
-    expect(response.error).toBe("Test error");
-    expect(response.message).toBe("Operation failed");
-  });
-});
+// Test factories utility - no tests should be in this file
+// Tests for these factories should be in a separate test file

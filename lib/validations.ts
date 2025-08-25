@@ -5,6 +5,7 @@
 
 import { z } from 'zod'
 import { UserRole } from '@prisma/client'
+import { zodPasswordValidator } from './password-validator'
 
 // User authentication and management validation schemas
 
@@ -37,7 +38,9 @@ export const registerSchema = z.object({
     }, 'Email username must contain at least 4 characters before @'),
   password: z.string()
     .min(1, 'Password is required')
-    .min(6, 'Password must be at least 6 characters'),
+    .refine(zodPasswordValidator, {
+      message: 'Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)'
+    }),
   role: z.nativeEnum(UserRole)
     .optional()
     .default(UserRole.VIEWER)
@@ -71,7 +74,11 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Reset token is required'),
-  newPassword: z.string().min(6, 'New password is required'),
+  newPassword: z.string()
+    .min(1, 'New password is required')
+    .refine(zodPasswordValidator, {
+      message: 'Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)'
+    }),
   confirmNewPassword: z.string().min(6, 'Please confirm your new password'),
 }).refine(data => data.newPassword === data.confirmNewPassword, {
   message: 'Passwords do not match',
@@ -82,7 +89,11 @@ export const resetPasswordSchema = z.object({
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(6, 'Current password is required'),
-  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+  newPassword: z.string()
+    .min(1, 'New password is required')
+    .refine(zodPasswordValidator, {
+      message: 'Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)'
+    }),
   confirmNewPassword: z.string().min(8, 'Please confirm your new password'),
 })
 

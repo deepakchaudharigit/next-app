@@ -50,7 +50,7 @@ describe('POST /api/auth/register', () => {
   const baseValidUser = {
     name: 'John Doe',
     email: 'john@example.com',
-    password: 'password123',
+    password: 'Password@123', // Updated to meet new requirements
     role: 'VIEWER',
   }
 
@@ -118,7 +118,7 @@ describe('POST /api/auth/register', () => {
       body: {
         name: 'Jane Doe',
         email: 'jane@example.com',
-        password: 'password123',
+        password: 'Password@123', // Updated to meet new requirements
       },
     })
 
@@ -188,7 +188,7 @@ describe('POST /api/auth/register', () => {
     await expectErrorResponse(
       await POST(createMockRequest('/api/auth/register', {
         method: 'POST',
-        body: { ...base, password: '12' },
+        body: { ...base, password: 'weak' }, // Updated to test new validation
       })),
       400,
       'Invalid input data',
@@ -197,9 +197,9 @@ describe('POST /api/auth/register', () => {
 
   it('handles missing required fields', async () => {
     const cases = [
-      { name: 'John', password: 'password123' },
+      { name: 'John', password: 'Password@123' }, // Updated password
       { email: 'john@example.com', name: 'John' },
-      { email: 'john@example.com', password: 'password123' },
+      { email: 'john@example.com', password: 'Password@123' }, // Updated password
     ]
 
     for (const body of cases) {
@@ -289,7 +289,7 @@ describe('POST /api/auth/register', () => {
     const userWithWhitespace = {
       name: '  John Doe  ',
       email: 'john@example.com', // Use valid email without spaces
-      password: 'password123',
+      password: 'Password@123', // Updated to meet new requirements
       role: 'VIEWER',
     }
 
@@ -326,7 +326,7 @@ describe('POST /api/auth/register', () => {
     const userWithUppercaseEmail = {
       name: 'John Doe',
       email: 'JOHN@EXAMPLE.COM',
-      password: 'password123',
+      password: 'Password@123', // Updated to meet new requirements
       role: 'VIEWER',
     }
 
@@ -402,5 +402,100 @@ describe('POST /api/auth/register', () => {
     expect(data.data).not.toHaveProperty('password')
     expect(data.data).not.toHaveProperty('resetToken')
     expect(data.data).not.toHaveProperty('resetTokenExpiry')
+  })
+
+  describe('Password validation requirements', () => {
+    it('should reject passwords that are too short', async () => {
+      const req = createMockRequest('/api/auth/register', {
+        method: 'POST',
+        body: {
+          ...baseValidUser,
+          password: 'Pass1!', // Only 6 characters
+        },
+      })
+
+      const res = await POST(req)
+      await expectErrorResponse(res, 400, 'Invalid input data')
+    })
+
+    it('should reject passwords without uppercase letters', async () => {
+      const req = createMockRequest('/api/auth/register', {
+        method: 'POST',
+        body: {
+          ...baseValidUser,
+          password: 'password123!', // No uppercase
+        },
+      })
+
+      const res = await POST(req)
+      await expectErrorResponse(res, 400, 'Invalid input data')
+    })
+
+    it('should reject passwords without lowercase letters', async () => {
+      const req = createMockRequest('/api/auth/register', {
+        method: 'POST',
+        body: {
+          ...baseValidUser,
+          password: 'PASSWORD123!', // No lowercase
+        },
+      })
+
+      const res = await POST(req)
+      await expectErrorResponse(res, 400, 'Invalid input data')
+    })
+
+    it('should reject passwords without numbers', async () => {
+      const req = createMockRequest('/api/auth/register', {
+        method: 'POST',
+        body: {
+          ...baseValidUser,
+          password: 'Password!', // No numbers
+        },
+      })
+
+      const res = await POST(req)
+      await expectErrorResponse(res, 400, 'Invalid input data')
+    })
+
+    it('should reject passwords without special characters', async () => {
+      const req = createMockRequest('/api/auth/register', {
+        method: 'POST',
+        body: {
+          ...baseValidUser,
+          password: 'Password123', // No special characters
+        },
+      })
+
+      const res = await POST(req)
+      await expectErrorResponse(res, 400, 'Invalid input data')
+    })
+
+    it('should accept passwords meeting all requirements', async () => {
+      const validPasswords = [
+        'Password@123',
+        'MySecure1!',
+        'Test123#',
+        'Admin2024$',
+        'User@Pass1',
+      ]
+
+      for (const password of validPasswords) {
+        const newUser = createMockUser()
+        mockPrismaUserCreate.mockResolvedValue(newUser)
+        mockPrismaUserFindUnique.mockResolvedValue(null)
+
+        const req = createMockRequest('/api/auth/register', {
+          method: 'POST',
+          body: {
+            ...baseValidUser,
+            password,
+            email: `test${Math.random()}@example.com`, // Unique email for each test
+          },
+        })
+
+        const res = await POST(req)
+        await expectSuccessResponse(res)
+      }
+    })
   })
 })
