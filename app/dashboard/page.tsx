@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { UserProfile } from '@/components/auth/UserProfile'
 import { RoleGuard, AdminOnly, OperatorOrAdmin } from '@/components/auth/RoleGuard'
 // import { UserRole } from '@/types'
-import { UserRoleEnum } from '@lib/constants/roles'
+import { UserRoleEnum } from '@/lib/constants/roles'
 
 export default function DashboardPage() {
   const { user, isAuthenticated, hasPermission, isLoading } = useAuth()

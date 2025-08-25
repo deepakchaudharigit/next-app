@@ -29,11 +29,13 @@ COPY --chown=node:node package.json package-lock.json* ./
 # Copy Prisma schema first (needed for postinstall)
 COPY --chown=node:node prisma ./prisma
 
-# Install dependencies with optimized settings
+# Install dependencies with optimized settings for memory efficiency
 RUN npm config set fetch-retry-mintimeout 20000 && \
     npm config set fetch-retry-maxtimeout 120000 && \
     npm config set fetch-retries 3 && \
-    (npm ci --silent --no-audit --no-fund || npm install --silent --no-audit --no-fund)
+    npm config set maxsockets 5 && \
+    npm config set progress false && \
+    (npm ci --silent --no-audit --no-fund --prefer-offline || npm install --silent --no-audit --no-fund --prefer-offline)
 
 # Copy source code
 COPY --chown=node:node . .
@@ -44,11 +46,18 @@ RUN find scripts -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
 # Expose port
 EXPOSE 3000
 
-# Set environment variables
+# Set environment variables with memory optimization
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+ENV NODE_OPTIONS="--max-old-space-size=3072 --max-semi-space-size=256 --optimize-for-size"
+ENV CHOKIDAR_USEPOLLING=false
+ENV CHOKIDAR_INTERVAL=1000
+ENV WATCHPACK_POLLING=false
+ENV UV_THREADPOOL_SIZE=4
+ENV NPM_CONFIG_AUDIT=false
+ENV NPM_CONFIG_FUND=false
 
 # Default command
 CMD ["npm", "run", "dev"]

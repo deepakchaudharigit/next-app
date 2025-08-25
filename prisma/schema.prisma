@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
@@ -8,56 +8,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  ADMIN
-  OPERATOR
-  VIEWER
-}
-
-enum EquipmentStatus {
-  ONLINE
-  OFFLINE
-  MAINTENANCE
-  ERROR
-}
-
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
-  role      UserRole @default(VIEWER)
-  isDeleted Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  accounts        Account[]
-  sessions        Session[]
-  userSessions    UserSession[]
-  auditLogs       AuditLog[]
-  passwordResets  PasswordReset[]
-  reports         Report[]         // ✅ NEW: User → Reports (1:N)
+  id             String          @id @default(cuid())
+  name           String
+  email          String          @unique
+  password       String
+  role           UserRole        @default(VIEWER)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  isDeleted      Boolean         @default(false)
+  accounts       Account[]
+  auditLogs      AuditLog[]
+  passwordResets PasswordReset[]
+  reports        Report[]
+  sessions       Session[]
+  userSessions   UserSession[]
 
   @@map("users")
 }
 
-// NextAuth.js required models
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -82,7 +65,6 @@ model VerificationToken {
   @@map("verification_tokens")
 }
 
-// Custom session model for additional session data
 model UserSession {
   id        String   @id @default(cuid())
   userId    String
@@ -91,8 +73,7 @@ model UserSession {
   createdAt DateTime @default(now())
   ipAddress String?
   userAgent String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_sessions")
 }
@@ -104,8 +85,7 @@ model PasswordReset {
   expiresAt DateTime
   used      Boolean  @default(false)
   createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("password_resets")
 }
@@ -119,8 +99,7 @@ model AuditLog {
   ipAddress String?
   userAgent String?
   timestamp DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
 }
@@ -136,7 +115,7 @@ model SystemConfig {
 }
 
 model VoicebotCall {
-  id                   String   @id @default(cuid())
+  id                   String    @id @default(cuid())
   cli                  String
   receivedAt           DateTime
   language             String
@@ -145,8 +124,10 @@ model VoicebotCall {
   transferredToIvr     DateTime?
   durationSeconds      Int
   callResolutionStatus String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@map("voicebot_calls")
 }
 
 model Report {
@@ -154,9 +135,22 @@ model Report {
   title     String
   content   String?
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("reports")
+}
+
+enum UserRole {
+  ADMIN
+  OPERATOR
+  VIEWER
+}
+
+enum EquipmentStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
+  ERROR
 }

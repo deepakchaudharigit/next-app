@@ -7,7 +7,7 @@ services:
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-npcl-auth-db-dev}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-SecurePassword2025!}
     ports:
       - "5432:5432"  # Keep same port for development consistency
     volumes:
@@ -21,7 +21,7 @@ services:
     container_name: npcl-dashboard-dkch
     env_file: .env.docker
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-npcl-auth-db-dev}?schema=public
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-SecurePassword2025!}@postgres:5432/${POSTGRES_DB:-npcl-auth-db-dev}?schema=public
       - NEXTAUTH_URL=http://localhost:3000
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
@@ -29,21 +29,46 @@ services:
       - NPM_CONFIG_AUDIT=false
       - NPM_CONFIG_FUND=false
       - NPM_CONFIG_LOGLEVEL=warn
+      - NODE_OPTIONS=--max-old-space-size=3072 --max-semi-space-size=256 --optimize-for-size
+      - CHOKIDAR_USEPOLLING=false
+      - CHOKIDAR_INTERVAL=1000
+      - UV_THREADPOOL_SIZE=4
       # Prisma engine paths for Debian/glibc (auto-detected, but can be explicit)
       # - PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/.prisma/client/libquery_engine-debian-openssl-1.1.x.so.node
       # - PRISMA_QUERY_ENGINE_BINARY=/app/node_modules/.prisma/client/query-engine-debian-openssl-1.1.x
       # Let Prisma auto-detect the correct engine for better compatibility
     ports:
       - "3000:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: '2.0'
+        reservations:
+          memory: 2G
+          cpus: '1.0'
     volumes:
-      # Mount source code for hot reloading
-      - .:/app
-      - /app/node_modules
-      - /app/.next
+      # Mount only essential directories to reduce memory usage
+      - ./app:/app/app:ro
+      - ./components:/app/components:ro
+      - ./lib:/app/lib:ro
+      - ./middleware:/app/middleware:ro
+      - ./prisma:/app/prisma:ro
+      - ./types:/app/types:ro
+      - ./hooks:/app/hooks:ro
+      - ./config:/app/config:ro
+      - ./package.json:/app/package.json:ro
+      - ./package-lock.json:/app/package-lock.json:ro
+      - ./next.config.js:/app/next.config.js:ro
+      - ./tailwind.config.js:/app/tailwind.config.js:ro
+      - ./postcss.config.js:/app/postcss.config.js:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
       - ./uploads:/app/uploads
       - dev_logs:/app/logs
-    # Use startup script or fallback to direct npm command
-    command: ["/bin/bash", "-c", "chmod +x ./scripts/docker/startup-dev-simple.sh && ./scripts/docker/startup-dev-simple.sh || npm run dev"]
+      - dev_node_modules:/app/node_modules
+      - dev_next:/app/.next
+    # Use memory-optimized startup script
+    command: ["/bin/bash", "-c", "chmod +x ./scripts/docker/startup-memory-optimized.sh && ./scripts/docker/startup-memory-optimized.sh || npm run dev"]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health || exit 1"]
       interval: 30s
@@ -81,3 +106,5 @@ services:
 volumes:
   postgres_dev_data:
   dev_logs:
+  dev_node_modules:
+  dev_next:

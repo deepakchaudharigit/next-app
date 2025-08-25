@@ -1,202 +1,88 @@
 #!/bin/bash
 
-# NPCL Dashboard Docker Issues Fix Script
-# This script fixes the OpenSSL compatibility and database name issues
+# NPCL Dashboard - Quick Fix Script for Docker Issues
+# This script applies all fixes and restarts the Docker services
 
 set -e
 
-echo "🔧 NPCL Dashboard Docker Issues Fix"
-echo "===================================="
+echo "🔧 NPCL Dashboard - Quick Fix for Docker Issues"
+echo "=============================================="
 echo ""
 
-# Function to check if Docker is running
-check_docker() {
-    if ! docker info >/dev/null 2>&1; then
-        echo "❌ Docker is not running. Please start Docker and try again."
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+print_status() {
+    local status=$1
+    local message=$2
+    case $status in
+        "SUCCESS")
+            echo -e "${GREEN}✅ $message${NC}"
+            ;;
+        "ERROR")
+            echo -e "${RED}❌ $message${NC}"
+            ;;
+        "WARNING")
+            echo -e "${YELLOW}⚠️  $message${NC}"
+            ;;
+        "INFO")
+            echo -e "${BLUE}ℹ️  $message${NC}"
+            ;;
+    esac
+}
+
+# Stop any running containers
+print_status "INFO" "Stopping existing Docker containers..."
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml down -v 2>/dev/null || true
+print_status "SUCCESS" "Containers stopped"
+
+# Make scripts executable
+print_status "INFO" "Making scripts executable..."
+find scripts -name "*.sh" -type f -exec chmod +x {} \; 2>/dev/null || true
+print_status "SUCCESS" "Scripts are now executable"
+
+# Clean up Docker resources
+print_status "INFO" "Cleaning up Docker resources..."
+docker system prune -f >/dev/null 2>&1 || true
+print_status "SUCCESS" "Docker cleanup completed"
+
+# Validate configuration
+print_status "INFO" "Validating configuration..."
+if [ -f "scripts/docker/validate-fixes.sh" ]; then
+    chmod +x scripts/docker/validate-fixes.sh
+    if ./scripts/docker/validate-fixes.sh; then
+        print_status "SUCCESS" "Configuration validation passed"
+    else
+        print_status "ERROR" "Configuration validation failed"
         exit 1
     fi
-    echo "✅ Docker is running"
-}
+else
+    print_status "WARNING" "Validation script not found, skipping validation"
+fi
 
-# Function to stop and remove existing containers
-cleanup_containers() {
-    echo "🧹 Cleaning up existing containers..."
-    
-    # Stop all containers
-    docker-compose down --remove-orphans 2>/dev/null || true
-    
-    # Remove specific containers if they exist
-    docker rm -f npcl-dashboard-dkch npcl-postgres npcl-redis npcl-nginx 2>/dev/null || true
-    
-    # Remove dangling images
-    docker image prune -f >/dev/null 2>&1 || true
-    
-    echo "✅ Cleanup completed"
-}
+# Start the services
+print_status "INFO" "Starting Docker services with fixed configuration..."
+echo ""
+echo "🚀 Running: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build"
+echo ""
 
-# Function to rebuild images with OpenSSL fixes
-rebuild_images() {
-    echo "🔨 Rebuilding Docker images with OpenSSL fixes..."
-    
-    # Build production image
-    echo "   Building production image..."
-    docker-compose build --no-cache app
-    
-    # Build development image
-    echo "   Building development image..."
-    docker-compose -f docker-compose.yml -f docker-compose.dev.yml build --no-cache app
-    
-    echo "✅ Images rebuilt successfully"
-}
+# Start services
+docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
-# Function to verify environment files
-verify_environment() {
-    echo "🔍 Verifying environment configuration..."
-    
-    if [ ! -f ".env.docker" ]; then
-        echo "❌ .env.docker file not found"
-        exit 1
-    fi
-    
-    # Check if database name is correct
-    if grep -q "npcl-auth-db-dev" .env.docker; then
-        echo "✅ Database name configuration is correct"
-    else
-        echo "❌ Database name configuration needs fixing"
-        exit 1
-    fi
-    
-    echo "✅ Environment configuration verified"
-}
-
-# Function to start services
-start_services() {
-    echo "🚀 Starting services..."
-    
-    # Start PostgreSQL first
-    echo "   Starting PostgreSQL..."
-    docker-compose up -d postgres
-    
-    # Wait for PostgreSQL to be ready
-    echo "   Waiting for PostgreSQL to be ready..."
-    sleep 10
-    
-    # Start Redis
-    echo "   Starting Redis..."
-    docker-compose up -d redis
-    
-    # Start the application
-    echo "   Starting NPCL Dashboard..."
-    docker-compose up -d app
-    
-    echo "✅ All services started"
-}
-
-# Function to check service health
-check_health() {
-    echo "🏥 Checking service health..."
-    
-    # Wait a bit for services to initialize
-    sleep 15
-    
-    # Check PostgreSQL
-    if docker-compose exec postgres pg_isready -U postgres -d npcl-auth-db-dev >/dev/null 2>&1; then
-        echo "✅ PostgreSQL is healthy"
-    else
-        echo "⚠️  PostgreSQL health check failed"
-    fi
-    
-    # Check Redis
-    if docker-compose exec redis redis-cli ping >/dev/null 2>&1; then
-        echo "✅ Redis is healthy"
-    else
-        echo "⚠️  Redis health check failed"
-    fi
-    
-    # Check application
-    echo "   Waiting for application to start..."
-    sleep 30
-    
-    if curl -f http://localhost:3000/api/health >/dev/null 2>&1; then
-        echo "✅ Application is healthy"
-    else\n        echo "⚠️  Application health check failed - checking logs..."
-        docker-compose logs app | tail -20
-    fi
-}
-
-# Function to show status
-show_status() {
-    echo ""
-    echo "📊 Service Status:"
-    echo "=================="
-    docker-compose ps
-    echo ""
-    echo "🌐 Access Points:"
-    echo "================="
-    echo "   Application: http://localhost:3000"
-    echo "   Health Check: http://localhost:3000/api/health"
-    echo "   PostgreSQL: localhost:5432"
-    echo "   Redis: localhost:6379"
-    echo ""
-    echo "📋 Useful Commands:"
-    echo "=================="
-    echo "   View logs: docker-compose logs -f app"
-    echo "   Stop services: docker-compose down"
-    echo "   Restart app: docker-compose restart app"
-    echo "   Database shell: docker-compose exec postgres psql -U postgres -d npcl-auth-db-dev"
-}
-
-# Function to handle errors
-handle_error() {
-    echo ""
-    echo "❌ Error occurred: $1"
-    echo ""
-    echo "🔍 Troubleshooting:"
-    echo "=================="
-    echo "1. Check Docker logs: docker-compose logs"
-    echo "2. Verify Docker is running: docker info"
-    echo "3. Check disk space: df -h"
-    echo "4. Try manual cleanup: docker system prune -f"
-    echo ""
-    exit 1
-}
-
-# Set up error handling
-trap 'handle_error \"Unexpected error during fix process\"' ERR
-
-# Main execution
-main() {
-    echo "Starting Docker issues fix process..."
-    echo ""
-    
-    # Check prerequisites
-    check_docker
-    
-    # Verify environment
-    verify_environment
-    
-    # Cleanup existing containers
-    cleanup_containers
-    
-    # Rebuild images with fixes
-    rebuild_images
-    
-    # Start services
-    start_services
-    
-    # Check health
-    check_health
-    
-    # Show final status
-    show_status
-    
-    echo ""
-    echo "🎉 Docker issues fix completed successfully!"
-    echo "   The OpenSSL compatibility issue has been resolved"
-    echo "   The database name mismatch has been fixed"
-    echo "   All services should now be running properly"
-    echo ""
-}
-
-# Run main function
-main "$@"
+echo ""
+print_status "SUCCESS" "Docker services started successfully!"
+echo ""
+echo "📱 Your application should be available at:"
+echo "   • Main App: http://localhost:3000"
+echo "   • Adminer (DB): http://localhost:8080 (if dev-tools profile is enabled)"
+echo "   • Mailhog: http://localhost:8025 (if dev-tools profile is enabled)"
+echo ""
+echo "🔍 To check logs:"
+echo "   • All services: docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f"
+echo "   • App only: docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f app"
+echo "   • Database only: docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f postgres"
+echo ""

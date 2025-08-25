@@ -9,7 +9,12 @@ import { UserRole } from '@prisma/client'
 // User authentication and management validation schemas
 
 export const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string()
+    .email('Invalid email address')
+    .refine(val => {
+      const username = val.split('@')[0]
+      return username && username.length >= 4
+    }, 'Email username must contain at least 4 characters before @'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 })
 
@@ -25,7 +30,11 @@ export const registerSchema = z.object({
     .max(255, 'Email must be less than 255 characters')
     .transform(val => val.trim().toLowerCase())
     .refine(val => val.includes('@'), 'Email must contain @ symbol')
-    .refine(val => !val.includes('..'), 'Email cannot contain consecutive dots'),
+    .refine(val => !val.includes('..'), 'Email cannot contain consecutive dots')
+    .refine(val => {
+      const username = val.split('@')[0]
+      return username && username.length >= 4
+    }, 'Email username must contain at least 4 characters before @'),
   password: z.string()
     .min(1, 'Password is required')
     .min(6, 'Password must be at least 6 characters'),
@@ -40,12 +49,23 @@ export const registerSchema = z.object({
 
 export const updateUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').optional(),
-  email: z.string().email('Invalid email address').optional(),
+  email: z.string()
+    .email('Invalid email address')
+    .refine(val => {
+      const username = val.split('@')[0]
+      return username && username.length >= 4
+    }, 'Email username must contain at least 4 characters before @')
+    .optional(),
   role: z.enum(['ADMIN', 'OPERATOR', 'VIEWER']).optional(),
 })
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.string()
+    .email('Invalid email address')
+    .refine(val => {
+      const username = val.split('@')[0]
+      return username && username.length >= 4
+    }, 'Email username must contain at least 4 characters before @'),
 })
 
 
