@@ -81,6 +81,10 @@ describe("/api/auth/test-session", () => {
   });
 
   it("should handle errors gracefully", async () => {
+    // Suppress console error for this expected error test
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+    
     mockGetServerSession.mockRejectedValue(new Error("Session error"));
 
     const request = new NextRequest(
@@ -96,6 +100,9 @@ describe("/api/auth/test-session", () => {
     expect(response.status).toBe(500);
     expect(data.success).toBe(false);
     expect(data.message).toContain("Internal server error");
+    
+    // Restore console.error
+    console.error = originalConsoleError;
   });
 
   it("should extract IP from x-real-ip header when x-forwarded-for is not available", async () => {

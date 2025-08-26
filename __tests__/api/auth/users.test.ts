@@ -118,7 +118,11 @@ describe('/api/auth/users', () => {
         },
       ]
 
-      mockPrismaUserFindMany.mockResolvedValue(mockUsers)
+      mockPrismaUserFindMany.mockResolvedValue(mockUsers.map(user => ({
+        ...user,
+        password: 'hashed-password',
+        isDeleted: false
+      })))
 
       const req = new NextRequest('http://localhost:3000/api/auth/users')
       const res = await GET(req)

@@ -148,7 +148,7 @@ describe("Auth utilities - Enhanced", () => {
       const mockToken = "random-hex-token";
       const mockBuffer = Buffer.from("random-bytes");
 
-      mockCrypto.randomBytes.mockReturnValue(mockBuffer);
+      mockCrypto.randomBytes.mockReturnValue(mockBuffer as any);
       mockBuffer.toString = jest.fn().mockReturnValue(mockToken);
 
       const result = generateResetToken();
@@ -310,7 +310,7 @@ describe("Auth utilities - Enhanced", () => {
         ];
 
         headers.forEach((header) => {
-          expect(() => extractTokenFromHeader(header)).toThrow(
+          expect(() => extractTokenFromHeader(header!)).toThrow(
             "extractTokenFromHeader is deprecated. Use NextAuth.js session management instead.",
           );
         });
@@ -331,7 +331,7 @@ describe("Auth utilities - Enhanced", () => {
 
     it("should generate cryptographically secure reset tokens", () => {
       const mockBuffer = Buffer.from("secure-random-bytes");
-      mockCrypto.randomBytes.mockReturnValue(mockBuffer);
+      mockCrypto.randomBytes.mockReturnValue(mockBuffer as any);
       mockBuffer.toString = jest.fn().mockReturnValue("secure-hex-token");
 
       generateResetToken();

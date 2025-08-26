@@ -11,10 +11,11 @@ export interface MockUser {
   id: string
   name: string
   email: string
-  password?: string
+  password: string
   role: UserRole
   createdAt: Date
   updatedAt: Date
+  isDeleted: boolean
 }
 
 // Mock NextAuth Session type
@@ -82,9 +83,10 @@ export interface TestUser {
   name: string
   email: string
   role: UserRole
-  password?: string
+  password: string
   createdAt: Date
   updatedAt: Date
+  isDeleted: boolean
 }
 
 // Mock function types

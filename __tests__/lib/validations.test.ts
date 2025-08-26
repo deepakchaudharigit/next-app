@@ -7,7 +7,41 @@ import {
   changePasswordSchema,
 } from "@lib/validations";
 import { UserRole } from "@prisma/client";
-import { testFormValidation } from "../utils/test-helpers.utils";
+import type { ZodSchema } from "zod";
+
+// Test form validation helper
+interface ValidationCase {
+  data: unknown
+  expectedErrors: string[]
+}
+
+const testFormValidation = (
+  schema: ZodSchema,
+  validData: unknown,
+  invalidCases: ValidationCase[]
+): void => {
+  describe("Form validation", () => {
+    it("should validate correct data", () => {
+      const result = schema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    invalidCases.forEach(({ data, expectedErrors }, index) => {
+      it(`should reject invalid data case ${index + 1}`, () => {
+        const result = schema.safeParse(data);
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          const errorMessages = result.error.issues.map(
+            (issue) => issue.message
+          );
+          expectedErrors.forEach((expectedError) => {
+            expect(errorMessages).toContain(expectedError);
+          });
+        }
+      });
+    });
+  });
+};
 
 describe("Validation Schemas", () => {
   describe("loginSchema", () => {

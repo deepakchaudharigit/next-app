@@ -244,8 +244,17 @@ describe("Fix 4: Session vs DB role mismatch", () => {
 });
 
 describe("Edge cases and error handling", () => {
+  const originalConsoleError = console.error;
+  
   beforeEach(() => {
     jest.clearAllMocks();
+    // Suppress console errors for expected error tests
+    console.error = jest.fn();
+  });
+  
+  afterEach(() => {
+    // Restore console.error
+    console.error = originalConsoleError;
   });
 
   it("should handle database errors gracefully", async () => {

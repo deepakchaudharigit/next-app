@@ -1,5 +1,5 @@
 /**
- * NextAuth Configuration
+ * Auth.js Configuration
  * Handles authentication setup with credentials provider, JWT sessions, and role-based access control for NPCL Dashboard.
  */
 
@@ -37,7 +37,11 @@ declare module 'next-auth/jwt' {
 }
 
 export const authOptions: NextAuthOptions = {
-  // Using JWT strategy instead of database sessions for better performance
+  // Using JWT strategy for stateless authentication
+  session: {
+    strategy: 'jwt',
+    maxAge: 24 * 60 * 60, // 24 hours
+  },
   
   providers: [
     CredentialsProvider({
@@ -56,7 +60,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (isDevelopment) {
-          // // console.log('Authorization attempt for:', credentials?.email)
+          console.log('Authorization attempt for:', credentials?.email)
         }
         
         // Return null for missing credentials to prevent authentication
@@ -73,10 +77,11 @@ export const authOptions: NextAuthOptions = {
               email: true,
               password: true,
               role: true,
+              isDeleted: true,
             }
           })
 
-          if (!user) {
+          if (!user || user.isDeleted) {
             return null
           }
 
@@ -87,135 +92,72 @@ export const authOptions: NextAuthOptions = {
           }
           
           // Log successful login for audit purposes
-          prisma.auditLog.create({
-            data: {
-              userId: user.id,
-              action: 'login',
-              resource: 'auth',
-              details: { method: 'credentials' },
-              ipAddress: 'unknown',
-              userAgent: 'unknown',
-            }
-          }).catch(error => {
-            if (isDevelopment) {
-              console.error('Audit log failed:', error)
-            }
-          })
-
-          const returnUser = {
+          try {
+            await prisma.auditLog.create({
+              data: {
+                userId: user.id,
+                action: 'login',
+                resource: 'auth',
+                details: { method: 'nextauth_credentials', email: user.email },
+              }
+            })
+          } catch (auditError) {
+            console.warn('Failed to log audit event:', auditError)
+          }
+          
+          return {
             id: user.id,
             name: user.name,
             email: user.email,
             role: user.role,
           }
-          
-          if (isDevelopment) {
-            // // console.log('User authenticated:', { id: returnUser.id, email: returnUser.email, role: returnUser.role })
-          }
-          return returnUser
-        } catch (error: unknown) {
-          if (isDevelopment) {
-            console.error('Authentication error:', error instanceof Error ? error.message : 'Unknown error')
-          }
+        } catch (error) {
+          console.error('Authorization error:', error)
           return null
         }
       }
     })
   ],
-  
-  session: {
-    strategy: 'jwt',
-    maxAge: authConfig.session.maxAge,
-    updateAge: authConfig.session.updateAge,
-  },
-
-  jwt: {
-    maxAge: authConfig.session.maxAge,
-  },
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // Add user information to token during initial signin
+      // Persist user data to the token right after signin
       if (user) {
-        if (isDevelopment) {
-          // // console.log('Adding user to JWT token:', { id: user.id, role: user.role })
-        }
         token.id = user.id
         token.role = user.role
       }
-
-      // Handle session updates when user data changes
-      if (trigger === 'update' && session) {
-        if (isDevelopment) {
-          // // console.log('Updating JWT token from session')
-        }
-        if (session.user) {
+      
+      // Handle session updates
+      if (trigger === 'update' && session?.user) {
+        if (session.user.name) {
           token.name = session.user.name
+        }
+        if (session.user.email) {
           token.email = session.user.email
         }
       }
-
+      
       return token
     },
-
     async session({ session, token }) {
-      // Add token information to session for client access
-      if (token && session.user) {
-        session.user.id = token.id as string
-        session.user.role = token.role as UserRole
-        
-        if (isDevelopment) {
-          // // console.log('Session created for user:', { 
-          //   id: session.user.id, 
-          //   email: session.user.email, 
-          //   role: session.user.role 
-          // })
-        }
+      // Send properties to the client
+      if (token) {
+        session.user.id = token.id
+        session.user.role = token.role
       }
       return session
     },
-
-    async signIn({ user, account, profile }) {
-      // Allow signin if user was validated in authorize callback
-      if (isDevelopment) {
-        // // console.log('SignIn callback - user validated:', user?.email)
-      }
+    async signIn({ user, account, profile, email, credentials }) {
+      // Allow sign in
       return true
     },
-
     async redirect({ url, baseUrl }) {
-      if (isDevelopment) {
-        // // console.log('Redirect callback:', { url, baseUrl })
-      }
-      
-      // Handle relative URLs by converting to absolute
-      if (url.startsWith('/')) {
-        const redirectUrl = `${baseUrl}${url}`
-        return redirectUrl
-      }
-      
-      // Allow same-origin URLs
-      if (url.startsWith(baseUrl)) {
-        return url
-      }
-      
-      // Allow localhost URLs in development environment
-      if (isDevelopment && url.includes('localhost')) {
-        try {
-          const urlObj = new URL(url)
-          if (urlObj.hostname === 'localhost') {
-            return url
-          }
-        } catch (e) {
-          if (isDevelopment) {
-            console.error('Invalid URL in redirect:', url, e)
-          }
-        }
-      }
-      
-      // Default redirect to dashboard for security
-      const defaultUrl = `${baseUrl}/dashboard`
-      return defaultUrl
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`
+      // Allows callback URLs on the same origin
+      else if (new URL(url).origin === baseUrl) return url
+      // Fallback to dashboard for external URLs
+      return `${baseUrl}/dashboard`
     }
   },
 
@@ -226,105 +168,42 @@ export const authOptions: NextAuthOptions = {
   },
 
   events: {
-    async signOut({ token }) {
+    async signOut({ token, session }) {
+      // Log logout event
       if (token?.id) {
-        if (isDevelopment) {
-          // // console.log('User signing out:', token.id)
+        try {
+          await prisma.auditLog.create({
+            data: {
+              userId: token.id as string,
+              action: 'logout',
+              resource: 'auth',
+              details: { method: 'nextauth_signout' },
+            }
+          })
+        } catch (auditError) {
+          console.warn('Failed to log logout audit event:', auditError)
         }
-        
-        // Log logout event for audit trail
-        prisma.auditLog.create({
-          data: {
-            userId: token.id as string,
-            action: 'logout',
-            resource: 'auth',
-            details: { method: 'nextauth' },
-            ipAddress: 'unknown',
-            userAgent: 'unknown',
-          }
-        }).catch(error => {
-          if (isDevelopment) {
-            console.error('Logout audit log failed:', error)
-          }
-        })
-      }
-    },
-
-    async signIn({ user, account, profile, isNewUser }) {
-      if (isDevelopment) {
-        // // console.log('Successful signin event:', { 
-        //   userId: user.id, 
-        //   email: user.email, 
-        //   isNewUser 
-        // })
-      }
-    },
-
-    async session({ session, token }) {
-      if (isDevelopment) {
-        // // console.log('Session event:', { 
-        //   userId: session.user?.id, 
-        //   email: session.user?.email 
-        // })
       }
     }
   },
 
-  // Security configuration
+  // Security settings
   secret: serverEnv.NEXTAUTH_SECRET,
-  useSecureCookies: isProduction,
   
+  // Cookie settings
   cookies: {
     sessionToken: {
-      name: isProduction 
-        ? '__Secure-next-auth.session-token' 
-        : 'next-auth.session-token',
+      name: `${isProduction ? '__Secure-' : ''}next-auth.session-token`,
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
         secure: isProduction,
-        maxAge: authConfig.session.maxAge,
-      }
+        maxAge: 24 * 60 * 60, // 24 hours
+      },
     },
-    callbackUrl: {
-      name: isProduction 
-        ? '__Secure-next-auth.callback-url' 
-        : 'next-auth.callback-url',
-      options: {
-        sameSite: 'lax',
-        path: '/',
-        secure: isProduction,
-      }
-    },
-    csrfToken: {
-      name: isProduction 
-        ? '__Host-next-auth.csrf-token' 
-        : 'next-auth.csrf-token',
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: isProduction,
-      }
-    }
   },
 
-  // Enable debug logging only in development
+  // Enable debug in development
   debug: isDevelopment,
-  
-  // Custom logger for development debugging
-  logger: {
-    error(code, metadata) {
-      console.error('NextAuth Error:', code, metadata)
-    },
-    warn(code) {
-      console.warn('NextAuth Warning:', code)
-    },
-    debug(code, metadata) {
-      if (isDevelopment) {
-        // // console.log('NextAuth Debug:', code, metadata)
-      }
-    }
-  },
 }

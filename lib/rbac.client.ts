@@ -50,7 +50,7 @@ export function hasPermission(userRole: UserRole, permission: Permission): boole
   if (!permissions[permission]) {
     return false
   }
-  return (permissions[permission] as UserRole[]).includes(userRole)
+  return [...permissions[permission]].includes(userRole)
 }
 
 /**

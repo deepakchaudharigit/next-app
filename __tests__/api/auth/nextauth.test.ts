@@ -77,6 +77,9 @@ interface MockUser {
   password: string
   role: UserRole
   name: string
+  createdAt: Date
+  updatedAt: Date
+  isDeleted: boolean
 }
 
 interface MockCredentials {
@@ -144,7 +147,7 @@ describe('NextAuth Configuration', () => {
 
   it('should have correct providers configured', () => {
     expect(authOptions.providers).toHaveLength(1)
-    expect(authOptions.providers[0].name.toLowerCase()).toBe('credentials')
+    expect(authOptions.providers[0]?.name?.toLowerCase()).toBe('credentials')
   })
 
   it('should use JWT strategy', () => {
@@ -227,15 +230,17 @@ describe('NextAuth Configuration', () => {
         name: 'Test User',
       }
 
-      mockPrismaUserFindUnique.mockResolvedValue(mockUser)
+      mockPrismaUserFindUnique.mockResolvedValue({
+        ...mockUser,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isDeleted: false
+      })
+
+      const credentialsProvider = authOptions.providers[0] as any
       mockVerifyPassword.mockResolvedValue(false)
 
-      const credentialsProvider = authOptions.providers[0] as {
-        authorize: (credentials: MockCredentials, req?: Record<string, unknown>) => Promise<unknown>
-      }
-      const authorizeFunction = credentialsProvider.authorize
-
-      const result = await authorizeFunction(
+      const result = await credentialsProvider.authorize(
         { email: 'test@example.com', password: 'wrongpass' }
       )
 
@@ -243,13 +248,9 @@ describe('NextAuth Configuration', () => {
     })
 
     it('should reject missing credentials', async () => {
-      // @ts-expect-error auto approve type assertion for testing
-      const credentialsProvider = authOptions.providers[0] as {
-        authorize: (credentials: MockCredentials, req?: Record<string, unknown>) => Promise<unknown>
-      }
-      const authorizeFunction = credentialsProvider.authorize
+      const credentialsProvider = authOptions.providers[0] as any
 
-      const result = await authorizeFunction(
+      const result = await credentialsProvider.authorize(
         { email: '', password: '' }
       )
 
@@ -262,7 +263,7 @@ describe('NextAuth Configuration', () => {
     it('should add user data to token on sign in', async () => {
       const jwtCallback = authOptions.callbacks?.jwt as (params: MockJWTCallbackParams) => Promise<JWT>
 
-      const token: JWT = {}
+      const token: JWT = { id: '', role: UserRole.VIEWER }
       const user = { id: 'user123', role: UserRole.ADMIN }
 
       const result = await jwtCallback({ token, user })
@@ -296,14 +297,13 @@ describe('NextAuth Configuration', () => {
   // ---- Session Callback Tests ----
   describe('Session Callback', () => {
     it('should populate session.user with token data', async () => {
-      const sessionCallback = authOptions.callbacks?.session as (params: MockSessionCallbackParams) => Promise<{
-        user: Record<string, unknown>
-      }>
+      const sessionCallback = authOptions.callbacks?.session as any
 
       const session = { user: {} }
       const token = { id: 'user123', role: UserRole.ADMIN }
+      const user = { id: 'user123', name: 'Test User', email: 'test@example.com' }
 
-      const result = await sessionCallback({ session, token })
+      const result = await sessionCallback({ session, token, user })
 
       expect(result.user.id).toBe('user123')
       expect(result.user.role).toBe(UserRole.ADMIN)
@@ -313,10 +313,11 @@ describe('NextAuth Configuration', () => {
   // ---- SignIn Callback ----
   describe('SignIn Callback', () => {
     it('should allow valid users to sign in', async () => {
-      const signInCallback = authOptions.callbacks?.signIn as (params: MockSignInCallbackParams) => Promise<boolean>
+      const signInCallback = authOptions.callbacks?.signIn as any
 
       const user = {
         id: 'user123',
+        name: 'Test User',
         email: 'test@example.com',
         role: UserRole.ADMIN,
       }

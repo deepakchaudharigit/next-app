@@ -125,24 +125,19 @@ describe("RBAC Tests", () => {
     });
 
     it("should handle invalid permission gracefully", () => {
-      // @ts-expect-error
-      expect(hasPermission(UserRole.ADMIN, "fake.permission")).toBe(false);
+      expect(hasPermission(UserRole.ADMIN, "fake.permission" as any)).toBe(false);
     });
 
     it("should treat permission names as case sensitive", () => {
-      // @ts-expect-error
-      expect(hasPermission(UserRole.ADMIN, "USERS.VIEW")).toBe(false);
+      expect(hasPermission(UserRole.ADMIN, "USERS.VIEW" as any)).toBe(false);
     });
   });
 
   describe("Security edge cases", () => {
     it("should handle null/undefined inputs safely", () => {
-      // @ts-expect-error
-      expect(hasPermission(null, "dashboard.view")).toBe(false);
-      // @ts-expect-error
-      expect(hasPermission(UserRole.ADMIN, null)).toBe(false);
-      // @ts-expect-error
-      expect(hasPermission(undefined, undefined)).toBe(false);
+      expect(hasPermission(null as any, "dashboard.view")).toBe(false);
+      expect(hasPermission(UserRole.ADMIN, null as any)).toBe(false);
+      expect(hasPermission(undefined as any, undefined as any)).toBe(false);
     });
   });
 });

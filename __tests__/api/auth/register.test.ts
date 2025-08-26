@@ -4,6 +4,7 @@
  */
 
 import { NextRequest } from 'next/server'
+import { UserRole } from '@prisma/client'
 
 // ----------------------------
 // Mock Modules with Factory Functions
@@ -29,12 +30,42 @@ jest.mock('@lib/auth', () => ({
 import { POST } from '@/app/api/auth/register/route'
 import { prisma } from '@lib/prisma'
 import { hashPassword } from '@lib/auth'
-import { createMockUser } from '../../utils/test-factories'
-import {
-  createMockRequest,
-  expectSuccessResponse,
-  expectErrorResponse,
-} from '../../utils/test-helpers.utils'
+import { createTestUser } from '../../utils/test-utils'
+import { NextRequest, NextResponse } from 'next/server'
+
+// Create mock request function
+const createMockRequest = (url: string, options: { method?: string; body?: any; headers?: Record<string, string> } = {}) => {
+  const { method = 'GET', body, headers = {} } = options
+  return new NextRequest(url, {
+    method,
+    headers: {
+      'content-type': 'application/json',
+      ...headers,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+}
+
+// Response assertion helpers for NextResponse
+const expectSuccessResponse = async (response: NextResponse, expectedData?: any) => {
+  expect(response.status).toBe(200)
+  const data = await response.json()
+  expect(data.success).toBe(true)
+  if (expectedData) {
+    expect(data.data).toEqual(expectedData)
+  }
+  return data
+}
+
+const expectErrorResponse = async (response: NextResponse, expectedStatus: number, expectedMessage?: string) => {
+  expect(response.status).toBe(expectedStatus)
+  const data = await response.json()
+  expect(data.success).toBe(false)
+  if (expectedMessage) {
+    expect(data.message || data.error).toContain(expectedMessage)
+  }
+  return data
+}
 
 // ----------------------------
 // Type-safe mock references
@@ -72,14 +103,24 @@ describe('POST /api/auth/register', () => {
   })
 
   it('registers a new user successfully', async () => {
-    const newUser = createMockUser({ 
-      ...baseValidUser, 
-      id: 'user-1',
-      // Convert dates to strings as they would be serialized in JSON response
-      createdAt: '2024-01-01T00:00:00.000Z' as any,
-      updatedAt: '2024-01-01T00:00:00.000Z' as any
-    })
-    mockPrismaUserCreate.mockResolvedValue(newUser)
+    // Mock Prisma to return only the selected fields (matching the API route's select clause)
+    const selectedUserData = {
+      id: 'new-user-id',
+      name: 'John Doe',
+      email: 'john@example.com',
+      role: UserRole.VIEWER,
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    }
+    
+    const expectedUserResponse = {
+      id: 'new-user-id',
+      name: 'John Doe',
+      email: 'john@example.com',
+      role: 'VIEWER',
+      createdAt: '2024-01-01T00:00:00.000Z'
+    }
+    
+    mockPrismaUserCreate.mockResolvedValue(selectedUserData as any)
 
     const req = createMockRequest('/api/auth/register', {
       method: 'POST',
@@ -105,13 +146,19 @@ describe('POST /api/auth/register', () => {
         createdAt: true,
       },
     })
-    expect(data.data).toEqual(newUser)
+    expect(data.data).toEqual(expectedUserResponse)
     expect(data.message).toBe('User created successfully')
   })
 
   it('defaults role to VIEWER when not provided', async () => {
-    const newUser = createMockUser()
-    mockPrismaUserCreate.mockResolvedValue(newUser)
+    const selectedUserData = {
+      id: 'test-user-id',
+      name: 'Jane Doe',
+      email: 'jane@example.com',
+      role: UserRole.VIEWER,
+      createdAt: new Date(),
+    }
+    mockPrismaUserCreate.mockResolvedValue(selectedUserData as any)
 
     const req = createMockRequest('/api/auth/register', {
       method: 'POST',
@@ -133,7 +180,7 @@ describe('POST /api/auth/register', () => {
   })
 
   it('returns 409 if user already exists', async () => {
-    mockPrismaUserFindUnique.mockResolvedValue(createMockUser())
+    mockPrismaUserFindUnique.mockResolvedValue(createTestUser())
 
     const req = createMockRequest('/api/auth/register', {
       method: 'POST',
@@ -293,14 +340,14 @@ describe('POST /api/auth/register', () => {
       role: 'VIEWER',
     }
 
-    const newUser = {
+    const selectedUserData = {
       id: 'user-1',
       name: 'John Doe',
       email: 'john@example.com',
-      role: 'VIEWER',
+      role: UserRole.VIEWER,
       createdAt: new Date('2024-01-01T00:00:00.000Z'),
     }
-    mockPrismaUserCreate.mockResolvedValue(newUser)
+    mockPrismaUserCreate.mockResolvedValue(selectedUserData as any)
 
     const req = createMockRequest('/api/auth/register', {
       method: 'POST',
@@ -330,14 +377,14 @@ describe('POST /api/auth/register', () => {
       role: 'VIEWER',
     }
 
-    const newUser = {
+    const selectedUserData = {
       id: 'user-1',
       name: 'John Doe',
       email: 'john@example.com',
-      role: 'VIEWER',
+      role: UserRole.VIEWER,
       createdAt: new Date('2024-01-01T00:00:00.000Z'),
     }
-    mockPrismaUserCreate.mockResolvedValue(newUser)
+    mockPrismaUserCreate.mockResolvedValue(selectedUserData as any)
 
     const req = createMockRequest('/api/auth/register', {
       method: 'POST',
@@ -358,7 +405,7 @@ describe('POST /api/auth/register', () => {
   })
 
   it('should handle case-insensitive email match', async () => {
-    mockPrismaUserFindUnique.mockResolvedValue(createMockUser({
+    mockPrismaUserFindUnique.mockResolvedValue(createTestUser({
       email: 'john@example.com', // Database stores lowercase
     }))
 
@@ -381,15 +428,25 @@ describe('POST /api/auth/register', () => {
   })
 
   it('should not expose sensitive data in response', async () => {
-    // Create a user without password field since the API doesn't return it
-    const newUser = {
+    // Create a full user for Prisma mock
+    const mockUserForPrisma = createTestUser({
       id: 'user-1',
       name: 'John Doe',
       email: 'john@example.com',
-      role: 'VIEWER',
+      role: UserRole.VIEWER,
+      createdAt: new Date('2024-01-01T00:00:00.000Z'),
+    })
+    
+    // Mock Prisma to return only selected fields (as per the API route)
+    const selectedUserData = {
+      id: 'user-1',
+      name: 'John Doe',
+      email: 'john@example.com',
+      role: UserRole.VIEWER,
       createdAt: new Date('2024-01-01T00:00:00.000Z'),
     }
-    mockPrismaUserCreate.mockResolvedValue(newUser)
+    
+    mockPrismaUserCreate.mockResolvedValue(selectedUserData as any)
 
     const req = createMockRequest('/api/auth/register', {
       method: 'POST',
@@ -480,8 +537,14 @@ describe('POST /api/auth/register', () => {
       ]
 
       for (const password of validPasswords) {
-        const newUser = createMockUser()
-        mockPrismaUserCreate.mockResolvedValue(newUser)
+        const selectedUserData = {
+          id: 'test-user-id',
+          name: 'Test User',
+          email: `test${Math.random()}@example.com`,
+          role: UserRole.VIEWER,
+          createdAt: new Date(),
+        }
+        mockPrismaUserCreate.mockResolvedValue(selectedUserData as any)
         mockPrismaUserFindUnique.mockResolvedValue(null)
 
         const req = createMockRequest('/api/auth/register', {

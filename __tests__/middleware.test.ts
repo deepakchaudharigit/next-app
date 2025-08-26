@@ -59,7 +59,7 @@ describe("requireAuth", () => {
       name: "Test User",
     } as any);
 
-    const { user, response } = await requireAuth(mockRequest);
+    const { user, response } = await requireAuth();
 
     expect(user).toBeDefined();
     expect(user?.role).toBe(UserRole.ADMIN); // Should use current DB role
@@ -72,7 +72,7 @@ describe("requireAuth", () => {
     // Mock no session
     mockGetServerSession.mockResolvedValue(null);
 
-    const { user, response } = await requireAuth(mockRequest);
+    const { user, response } = await requireAuth();
 
     expect(user).toBeNull();
     expect(response).toBeDefined();
@@ -85,7 +85,7 @@ describe("requireAuth", () => {
     // Mock session without user
     mockGetServerSession.mockResolvedValue({ user: null } as any);
 
-    const { user, response } = await requireAuth(mockRequest);
+    const { user, response } = await requireAuth();
 
     expect(user).toBeNull();
     expect(response).toBeDefined();
@@ -108,7 +108,7 @@ describe("requireAuth", () => {
     // Mock user not found in database
     mockPrismaUserFindUnique.mockResolvedValue(null);
 
-    const { user, response } = await requireAuth(mockRequest);
+    const { user, response } = await requireAuth();
 
     expect(user).toBeNull();
     expect(response).toBeDefined();
@@ -123,7 +123,7 @@ describe("requireRole", () => {
 
   // Helper function to simulate requireRole functionality
   const requireRole = async (req: NextRequest, allowedRoles: UserRole[]) => {
-    const { user, response } = await requireAuth(req);
+    const { user, response } = await requireAuth();
 
     if (response) return { user: null, response };
 
@@ -249,7 +249,7 @@ describe("requireAdmin", () => {
       name: "Admin User",
     } as any);
 
-    const { user, response } = await requireAdmin(mockRequest);
+    const { user, response } = await requireAdmin();
 
     expect(user).toBeDefined();
     expect(user?.role).toBe(UserRole.ADMIN);
@@ -275,7 +275,7 @@ describe("requireAdmin", () => {
       name: "Regular User",
     } as any);
 
-    const { user, response } = await requireAdmin(mockRequest);
+    const { user, response } = await requireAdmin();
 
     expect(user).toBeNull();
     expect(response).toBeDefined();
@@ -307,7 +307,7 @@ describe("requireAdminOrModerator", () => {
       name: "Admin User",
     } as any);
 
-    const { user, response } = await requireOperatorOrAdmin(mockRequest);
+    const { user, response } = await requireOperatorOrAdmin();
 
     expect(user).toBeDefined();
     expect(user?.role).toBe(UserRole.ADMIN);
@@ -333,7 +333,7 @@ describe("requireAdminOrModerator", () => {
       name: "Operator User",
     } as any);
 
-    const { user, response } = await requireOperatorOrAdmin(mockRequest);
+    const { user, response } = await requireOperatorOrAdmin();
 
     expect(user).toBeDefined();
     expect(user?.role).toBe(UserRole.OPERATOR);
@@ -359,7 +359,7 @@ describe("requireAdminOrModerator", () => {
       name: "Regular User",
     } as any);
 
-    const { user, response } = await requireOperatorOrAdmin(mockRequest);
+    const { user, response } = await requireOperatorOrAdmin();
 
     expect(user).toBeNull();
     expect(response).toBeDefined();

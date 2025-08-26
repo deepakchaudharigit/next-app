@@ -22,9 +22,11 @@ export const createTestUser: TestDataFactory<MockUser> = (overrides = {}) => ({
   id: 'test-user-id',
   name: 'Test User',
   email: 'test@example.com',
+  password: '$2a$12$hashedpassword',
   role: UserRole.VIEWER,
   createdAt: new Date(),
   updatedAt: new Date(),
+  isDeleted: false,
   ...overrides,
 })
 
@@ -106,18 +108,21 @@ export const testUsers = {
     id: 'admin-id',
     name: 'Admin User',
     email: 'admin@example.com',
+    password: '$2a$12$adminhashedpassword',
     role: UserRole.ADMIN,
   }),
   operator: createTestUser({
     id: 'operator-id',
     name: 'Operator User',
     email: 'operator@example.com',
+    password: '$2a$12$operatorhashedpassword',
     role: UserRole.OPERATOR,
   }),
   viewer: createTestUser({
     id: 'viewer-id',
     name: 'Viewer User',
     email: 'viewer@example.com',
+    password: '$2a$12$viewerhashedpassword',
     role: UserRole.VIEWER,
   }),
 }
