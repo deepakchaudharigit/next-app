@@ -9,6 +9,7 @@ import { useSession, signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { UserRole } from '@prisma/client'
 import { hasPermission, Permission, checkUserPermission } from '@lib/rbac.client'
+import { performLogout } from '@lib/logout-utils'
 import { useState, useCallback } from 'react'
 
 export function useAuth() {
@@ -50,10 +51,20 @@ export function useAuth() {
   const logout = useCallback(async () => {
     setIsLoading(true)
     try {
-      await signOut({ redirect: false })
-      router.push('/auth/login')
+      const result = await performLogout()
+      if (result.success) {
+        router.push('/auth/login')
+        return { success: true, message: result.message }
+      } else {
+        console.error('Logout failed:', result.message)
+        return { success: false, error: result.message }
+      }
     } catch (error) {
       console.error('Logout error:', error)
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Logout failed'
+      }
     } finally {
       setIsLoading(false)
     }

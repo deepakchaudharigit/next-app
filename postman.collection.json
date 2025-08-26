@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "b10fc905-f937-4e93-b8b7-2910082cb55b",
 		"name": "NPCL Dashboard APIs",
-		"description": "Comprehensive API collection for NPCL Dashboard - A power management system with role-based authentication, voicebot call tracking, and dashboard analytics.\n\n## Authentication\nThis API uses NextAuth.js for session-based authentication. After signing in, session cookies are automatically managed.\n\n## Base URL\nDevelopment: http://localhost:3000\nProduction: Set {{baseUrl}} variable accordingly\n\n## Test Accounts\n- Admin: admin@npcl.com / admin123\n- Operator: operator@npcl.com / operator123\n- Viewer: viewer@npcl.com / viewer123",
+		"description": "Comprehensive API collection for NPCL Dashboard - A power management system with role-based authentication, voicebot call tracking, and dashboard analytics.\n\n## Authentication\nThis API now supports both NextAuth.js (legacy) and custom JSON-based authentication endpoints:\n\n### New JSON API Endpoints (Recommended)\n- **Login**: POST /api/auth/login - Returns proper JSON responses\n- **Logout**: POST /api/auth/logout - Returns JSON confirmation\n- **Session Check**: GET /api/auth/login - Check authentication status\n- **Signin**: POST /api/auth/signin - Credential validation only\n\n### Legacy NextAuth.js Endpoints\n- **Session**: GET /api/auth/session - NextAuth session info\n- **Signout**: POST /api/auth/signout - Form-based logout (returns HTML)\n\n## Base URL\nDevelopment: http://localhost:3000\nProduction: Set {{baseUrl}} variable accordingly\n\n## Test Accounts\n- Admin: admin@npcl.com / admin123\n- Operator: operator@npcl.com / operator123\n- Viewer: viewer@npcl.com / viewer123\n\n## Updated Features\n- **NEW**: JSON-based authentication API with proper responses\n- Enhanced password validation (8+ chars, uppercase, lowercase, number, special char)\n- Comprehensive user management endpoints\n- Voicebot call reporting with filtering and export\n- Health monitoring and system status\n- Audit logging for all user actions\n- Role-based access control (ADMIN, OPERATOR, VIEWER)\n- Dual authentication system (NextAuth + Custom API)",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "45768621"
 	},
@@ -11,7 +11,7 @@
 			"name": "Authentication",
 			"item": [
 				{
-					"name": "NextAuth Login",
+					"name": "Login (JSON API)",
 					"event": [
 						{
 							"listen": "test",
@@ -20,6 +20,15 @@
 									"// Test for successful login",
 									"pm.test(\"Status code is 200\", function () {",
 									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Login response has proper structure\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"    pm.expect(jsonData.user).to.have.property('id');",
+									"    pm.expect(jsonData.user).to.have.property('role');",
+									"    pm.expect(jsonData.user).to.not.have.property('password');",
 									"});",
 									"",
 									"// Save session cookie if present",
@@ -36,50 +45,58 @@
 						"header": [
 							{
 								"key": "Content-Type",
-								"value": "application/x-www-form-urlencoded"
+								"value": "application/json"
 							}
 						],
 						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "email",
-									"value": "admin@npcl.com",
-									"description": "User email address",
-									"type": "text"
-								},
-								{
-									"key": "password",
-									"value": "admin123",
-									"description": "User password",
-									"type": "text"
-								},
-								{
-									"key": "redirect",
-									"value": "false",
-									"description": "Prevent automatic redirect",
-									"type": "text"
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@npcl.com\",\n  \"password\": \"admin123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
 								}
-							]
+							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/signin/credentials",
+							"raw": "{{baseUrl}}/api/auth/login",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"auth",
-								"signin",
-								"credentials"
+								"login"
 							]
 						},
-						"description": "Sign in using NextAuth.js credentials provider. This sets a session cookie for subsequent authenticated requests."
+						"description": "Login using custom JSON API. Returns proper JSON response with user data and sets session cookies for subsequent authenticated requests."
 					},
 					"response": []
 				},
 				{
-					"name": "Get Session",
+					"name": "Check Session Status (JSON API)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has session status\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"    pm.expect(jsonData).to.have.property('authenticated');",
+									"    if (jsonData.authenticated) {",
+									"        pm.expect(jsonData).to.have.property('user');",
+									"        pm.expect(jsonData.user).to.have.property('role');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -89,22 +106,42 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/session",
+							"raw": "{{baseUrl}}/api/auth/login",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"auth",
-								"session"
+								"login"
 							]
 						},
-						"description": "Get current NextAuth.js session information. Returns user data if authenticated."
+						"description": "Check current session status using custom JSON API. Returns authentication status and user data if logged in."
 					},
 					"response": []
 				},
 				{
 					"name": "Verify Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success and user data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData).to.have.property('user');",
+									"    pm.expect(jsonData.user).to.have.property('role');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -129,43 +166,179 @@
 					"response": []
 				},
 				{
-					"name": "Logout",
+					"name": "Logout (JSON API)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Logout response has proper structure\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('successfully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
 							{
 								"key": "Content-Type",
-								"value": "application/x-www-form-urlencoded"
+								"value": "application/json"
 							}
 						],
-						"body": {
-							"mode": "urlencoded",
-							"urlencoded": [
-								{
-									"key": "callbackUrl",
-									"value": "{{baseUrl}}",
-									"description": "URL to redirect after logout",
-									"type": "text"
-								}
-							]
-						},
 						"url": {
-							"raw": "{{baseUrl}}/api/auth/signout",
+							"raw": "{{baseUrl}}/api/auth/logout",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"auth",
-								"signout"
+								"logout"
 							]
 						},
-						"description": "Sign out using NextAuth.js. Clears session cookie and redirects to callback URL."
+						"description": "Logout using custom JSON API. Returns proper JSON response and clears all session cookies (both NextAuth and custom auth tokens)."
+					},
+					"response": []
+				},
+				{
+					"name": "Signin (Credential Validation)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 401\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Credentials validated successfully\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.message).to.include('validated');",
+									"        pm.expect(jsonData.user).to.have.property('id');",
+									"        pm.expect(jsonData.user).to.have.property('role');",
+									"        pm.expect(jsonData.user).to.not.have.property('password');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"admin@npcl.com\",\n  \"password\": \"admin123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/signin",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"signin"
+							]
+						},
+						"description": "Validate credentials using custom signin API. This validates credentials but doesn't create a session - use for credential verification only."
+					},
+					"response": []
+				},
+				{
+					"name": "NextAuth Session (Legacy)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has user data\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('user');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/session",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"session"
+							]
+						},
+						"description": "Get current NextAuth.js session information (legacy endpoint). Returns user data if authenticated."
 					},
 					"response": []
 				},
 				{
 					"name": "Register User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 409\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 409]);",
+									"});",
+									"",
+									"pm.test(\"Response has success field\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('success');",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"User created successfully\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.data).to.have.property('id');",
+									"        pm.expect(jsonData.data).to.not.have.property('password');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -194,12 +367,31 @@
 								"register"
 							]
 						},
-						"description": "Register a new user account. Password must meet security requirements. Role defaults to VIEWER if not specified.\n\nAvailable roles: ADMIN, OPERATOR, VIEWER"
+						"description": "Register a new user account. Password must meet security requirements (8+ chars, uppercase, lowercase, number, special char). Role defaults to VIEWER if not specified.\n\nAvailable roles: ADMIN, OPERATOR, VIEWER"
 					},
 					"response": []
 				},
 				{
 					"name": "Forgot Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has success message\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('password reset link');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -262,7 +454,7 @@
 								"reset-password"
 							]
 						},
-						"description": "Reset password using token from email. Token expires after 1 hour."
+						"description": "Reset password using token from email. Token expires after 1 hour. Password must meet security requirements."
 					},
 					"response": []
 				},
@@ -295,6 +487,27 @@
 				},
 				{
 					"name": "Change Password",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 400\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 400, 401]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Password changed successfully\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.message).to.include('Password changed successfully');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -323,18 +536,40 @@
 								"change-password"
 							]
 						},
-						"description": "Change password for authenticated user. Requires current password verification. Logs audit event."
+						"description": "Change password for authenticated user. Requires current password verification. Logs audit event. New password must meet security requirements."
 					},
 					"response": []
 				}
 			],
-			"description": "Authentication endpoints using NextAuth.js for secure session management"
+			"description": "Authentication endpoints with both new JSON API and legacy NextAuth.js support. Use the new JSON endpoints for API clients and the legacy endpoints for web-based authentication."
 		},
 		{
 			"name": "User Management",
 			"item": [
 				{
 					"name": "Get User Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Profile data is returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('id');",
+									"    pm.expect(jsonData.data).to.have.property('email');",
+									"    pm.expect(jsonData.data).to.have.property('role');",
+									"    pm.expect(jsonData.data._count).to.have.property('auditLogs');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -360,6 +595,25 @@
 				},
 				{
 					"name": "Update User Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Profile updated successfully\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.message).to.include('updated successfully');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "PATCH",
 						"header": [
@@ -419,6 +673,27 @@
 				},
 				{
 					"name": "Get All Users (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 401\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Users list returned\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.data).to.be.an('array');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -444,6 +719,28 @@
 				},
 				{
 					"name": "Create User (Admin)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201 or 401 or 409\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([201, 401, 409]);",
+									"});",
+									"",
+									"if (pm.response.code === 201) {",
+									"    pm.test(\"User created successfully\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.data).to.have.property('id');",
+									"        pm.expect(jsonData.data).to.not.have.property('password');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -472,7 +769,7 @@
 								"users"
 							]
 						},
-						"description": "Create a new user account. Requires ADMIN role. Logs audit event."
+						"description": "Create a new user account. Requires ADMIN role. Logs audit event. Password must meet security requirements."
 					},
 					"response": []
 				},
@@ -571,6 +868,29 @@
 			"item": [
 				{
 					"name": "Get Dashboard Stats",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Dashboard stats returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('totalUsers');",
+									"    pm.expect(jsonData.data).to.have.property('totalReports');",
+									"    pm.expect(jsonData.data).to.have.property('recentAuditLogs');",
+									"    pm.expect(jsonData.data).to.have.property('voicebotCallsCount');",
+									"    pm.expect(jsonData.data).to.have.property('recentActivity');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -614,6 +934,28 @@
 			"item": [
 				{
 					"name": "Get Voicebot Calls",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Voicebot calls data returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.be.an('array');",
+									"    pm.expect(jsonData.meta).to.have.property('page');",
+									"    pm.expect(jsonData.meta).to.have.property('totalPages');",
+									"    pm.expect(jsonData.meta).to.have.property('totalRecords');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -691,6 +1033,28 @@
 				},
 				{
 					"name": "Get Voicebot Call by ID",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Call data returned\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.data).to.have.property('id');",
+									"        pm.expect(jsonData.data).to.have.property('cli');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -717,6 +1081,28 @@
 				},
 				{
 					"name": "Get Filter Options",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Filter options returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.true;",
+									"    pm.expect(jsonData.data).to.have.property('languages');",
+									"    pm.expect(jsonData.data).to.have.property('callResolutionStatuses');",
+									"    pm.expect(jsonData.data.languages).to.be.an('array');",
+									"    pm.expect(jsonData.data.callResolutionStatuses).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -743,6 +1129,28 @@
 				},
 				{
 					"name": "Export Voicebot Calls (CSV)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"CSV content type\", function () {",
+									"    pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv');",
+									"});",
+									"",
+									"pm.test(\"CSV attachment header\", function () {",
+									"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+									"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('voicebot_calls.csv');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -810,6 +1218,28 @@
 				},
 				{
 					"name": "Export Voicebot Calls (Excel)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Excel content type\", function () {",
+									"    pm.expect(pm.response.headers.get('Content-Type')).to.include('spreadsheetml.sheet');",
+									"});",
+									"",
+									"pm.test(\"Excel attachment header\", function () {",
+									"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment');",
+									"    pm.expect(pm.response.headers.get('Content-Disposition')).to.include('voicebot_calls.xlsx');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [],
@@ -884,6 +1314,42 @@
 			"item": [
 				{
 					"name": "Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 503\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"});",
+									"",
+									"pm.test(\"Health status returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('status');",
+									"    pm.expect(jsonData).to.have.property('timestamp');",
+									"    pm.expect(jsonData).to.have.property('uptime');",
+									"    pm.expect(jsonData).to.have.property('checks');",
+									"    pm.expect(jsonData.checks).to.have.property('database');",
+									"    pm.expect(jsonData.checks).to.have.property('memory');",
+									"});",
+									"",
+									"pm.test(\"Database check included\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.checks.database).to.have.property('status');",
+									"    pm.expect(['up', 'down']).to.include(jsonData.checks.database.status);",
+									"});",
+									"",
+									"pm.test(\"Memory usage included\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.checks.memory).to.have.property('used');",
+									"    pm.expect(jsonData.checks.memory).to.have.property('total');",
+									"    pm.expect(jsonData.checks.memory).to.have.property('percentage');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -908,6 +1374,23 @@
 				},
 				{
 					"name": "Health Check (Lightweight)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 503\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+									"});",
+									"",
+									"pm.test(\"No response body for HEAD request\", function () {",
+									"    pm.expect(pm.response.text()).to.be.empty;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "HEAD",
 						"header": [],
@@ -927,6 +1410,29 @@
 				},
 				{
 					"name": "API Documentation",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Documentation structure returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('title');",
+									"    pm.expect(jsonData).to.have.property('version');",
+									"    pm.expect(jsonData).to.have.property('authentication');",
+									"    pm.expect(jsonData).to.have.property('endpoints');",
+									"    pm.expect(jsonData).to.have.property('examples');",
+									"    pm.expect(jsonData).to.have.property('testAccounts');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -957,6 +1463,35 @@
 			"item": [
 				{
 					"name": "Test Session",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 401\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Session data returned\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.authenticated).to.be.true;",
+									"        pm.expect(jsonData).to.have.property('session');",
+									"        pm.expect(jsonData).to.have.property('debug');",
+									"    });",
+									"} else {",
+									"    pm.test(\"Unauthenticated response\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.false;",
+									"        pm.expect(jsonData.authenticated).to.be.false;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "GET",
 						"header": [
@@ -982,6 +1517,30 @@
 				},
 				{
 					"name": "Test Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200, 401, or 404\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 401, 404]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"Credentials validated successfully\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.message).to.include('Credentials are valid');",
+									"        pm.expect(jsonData.user).to.have.property('id');",
+									"        pm.expect(jsonData.user).to.have.property('role');",
+									"        pm.expect(jsonData.user).to.not.have.property('password');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
 						"header": [
@@ -1016,6 +1575,389 @@
 				}
 			],
 			"description": "Debug and testing endpoints for development"
+		},
+		{
+			"name": "Password Validation Tests",
+			"item": [
+				{
+					"name": "Test Weak Password (Too Short)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('Invalid input data');",
+									"    pm.expect(jsonData.errors).to.be.an('array');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test.weak@npcl.com\",\n  \"password\": \"Pass1!\",\n  \"confirmPassword\": \"Pass1!\",\n  \"role\": \"VIEWER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Test password validation - password too short (less than 8 characters)"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Weak Password (No Uppercase)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('Invalid input data');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test.nouppercase@npcl.com\",\n  \"password\": \"password123!\",\n  \"confirmPassword\": \"password123!\",\n  \"role\": \"VIEWER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Test password validation - no uppercase letters"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Weak Password (No Special Char)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Validation error returned\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('Invalid input data');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test.nospecial@npcl.com\",\n  \"password\": \"Password123\",\n  \"confirmPassword\": \"Password123\",\n  \"role\": \"VIEWER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Test password validation - no special characters"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Strong Password (Valid)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200 or 409\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 409]);",
+									"});",
+									"",
+									"if (pm.response.code === 200) {",
+									"    pm.test(\"User created with strong password\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.true;",
+									"        pm.expect(jsonData.message).to.include('User created successfully');",
+									"    });",
+									"} else if (pm.response.code === 409) {",
+									"    pm.test(\"User already exists (expected for repeated tests)\", function () {",
+									"        const jsonData = pm.response.json();",
+									"        pm.expect(jsonData.success).to.be.false;",
+									"        pm.expect(jsonData.message).to.include('already exists');",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User Strong\",\n  \"email\": \"test.strong@npcl.com\",\n  \"password\": \"StrongPass123!\",\n  \"confirmPassword\": \"StrongPass123!\",\n  \"role\": \"VIEWER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Test password validation - strong password that meets all requirements"
+					},
+					"response": []
+				}
+			],
+			"description": "Test cases for password validation requirements"
+		},
+		{
+			"name": "Error Handling Tests",
+			"item": [
+				{
+					"name": "Test Invalid Email Format",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Email validation error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('Invalid input data');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"invalid-email-format\",\n  \"password\": \"ValidPass123!\",\n  \"confirmPassword\": \"ValidPass123!\",\n  \"role\": \"VIEWER\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Test email validation with invalid email format"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Missing Required Fields",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"Missing fields validation error\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.message).to.include('Invalid input data');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Test User\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"auth",
+								"register"
+							]
+						},
+						"description": "Test validation with missing required fields (email, password)"
+					},
+					"response": []
+				},
+				{
+					"name": "Test Unauthorized Access",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									"",
+									"pm.test(\"Unauthorized error message\", function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData.success).to.be.false;",
+									"    pm.expect(jsonData.error || jsonData.message).to.include('required');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/dashboard/stats",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"dashboard",
+								"stats"
+							]
+						},
+						"description": "Test accessing protected endpoint without authentication"
+					},
+					"response": []
+				}
+			],
+			"description": "Test cases for error handling and validation"
 		}
 	],
 	"event": [
@@ -1028,7 +1970,10 @@
 					"pm.request.headers.add({",
 					"    key: 'User-Agent',",
 					"    value: 'NPCL-Dashboard-API-Client/1.0'",
-					"});"
+					"});",
+					"",
+					"// Set timestamp for debugging",
+					"pm.globals.set('requestTimestamp', new Date().toISOString());"
 				]
 			}
 		},
@@ -1046,6 +1991,16 @@
 					"if (pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
 					"    pm.test('Response is valid JSON', function () {",
 					"        pm.response.to.be.json;",
+					"    });",
+					"}",
+					"",
+					"// Global test for common error structure",
+					"if (pm.response.code >= 400 && pm.response.headers.get('Content-Type') && pm.response.headers.get('Content-Type').includes('application/json')) {",
+					"    pm.test('Error response has proper structure', function () {",
+					"        const jsonData = pm.response.json();",
+					"        pm.expect(jsonData).to.have.property('success');",
+					"        pm.expect(jsonData.success).to.be.false;",
+					"        pm.expect(jsonData).to.have.property('message');",
 					"    });",
 					"}"
 				]

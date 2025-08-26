@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
+
+// Increase EventEmitter max listeners to prevent warnings
+require('events').EventEmitter.defaultMaxListeners = 20;
+
 const nextConfig = {
   reactStrictMode: true,
 

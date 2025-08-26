@@ -75,22 +75,3 @@ export function throttle<T extends (...args: never[]) => unknown>(
   }
 }
 
-export function getStatusColor(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'online':
-      return 'text-green-600 bg-green-100'
-    case 'offline':
-      return 'text-red-600 bg-red-100'
-    case 'maintenance':
-      return 'text-yellow-600 bg-yellow-100'
-    case 'error':
-      return 'text-red-600 bg-red-100'
-    default:
-      return 'text-gray-600 bg-gray-100'
-  }
-}
-
-export function calculateEfficiency(generation: number, capacity: number): number {
-  if (capacity === 0) return 0
-  return Math.min((generation / capacity) * 100, 100)
-}

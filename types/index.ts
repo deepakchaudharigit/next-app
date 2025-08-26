@@ -31,58 +31,6 @@ export interface DashboardStats {
   unitsWithErrors: number
 }
 
-// Power unit types (for future implementation)
-export interface PowerUnit {
-  id: string
-  name: string
-  type: string
-  location: string
-  capacity: number
-  status: 'ONLINE' | 'OFFLINE' | 'MAINTENANCE' | 'ERROR'
-  createdAt: Date
-  updatedAt: Date
-}
-
-export interface PowerReading {
-  id: string
-  powerUnitId: string
-  value: number
-  generation?: number
-  efficiency?: number
-  timestamp: Date
-}
-
-export interface MaintenanceRecord {
-  id: string
-  powerUnitId: string
-  type: string
-  description: string
-  scheduledAt: Date
-  completedAt?: Date
-  status: string
-}
-
-export interface PowerUnitWithReadings extends PowerUnit {
-  readings: PowerReading[]
-  latestReading?: PowerReading
-  maintenance: MaintenanceRecord[]
-}
-
-// Chart data types
-export interface ChartDataPoint {
-  timestamp: string
-  value: number
-  label?: string
-}
-
-export interface PowerGenerationData {
-  unit: string
-  generation: number
-  capacity: number
-  efficiency: number
-  status: string
-}
-
 // Navigation types
 export interface NavItem {
   title: string

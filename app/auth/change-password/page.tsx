@@ -54,7 +54,7 @@ export default function ChangePasswordPage() {
         body: JSON.stringify({
           currentPassword,
           newPassword,
-          confirmPassword,
+          confirmNewPassword: confirmPassword,
         }),
       })
 

@@ -38,7 +38,6 @@ export const appConfig = {
   // Dashboard refresh intervals (in milliseconds)
   refreshIntervals: {
     dashboard: env.DASHBOARD_REFRESH_INTERVAL,
-    powerReadings: env.POWER_READINGS_REFRESH_INTERVAL,
     alerts: env.ALERTS_REFRESH_INTERVAL,
   },
   

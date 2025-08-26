@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     
     // Validate input
     const validatedData = resetPasswordSchema.parse(body)
-    const { token, newPassword } = validatedData
+    const { token, newPassword, confirmNewPassword } = validatedData
 
     // Find valid reset token
     const passwordReset = await prisma.passwordReset.findFirst({
@@ -96,15 +96,12 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    // Check if token is valid and not expired
-    const passwordReset = await prisma.passwordReset.findFirst({
-      where: {
-        token,
-        used: false,
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
+    console.log('Verifying token:', token)
+    console.log('Current time:', new Date().toISOString())
+
+    // First, check if token exists at all
+    const tokenExists = await prisma.passwordReset.findFirst({
+      where: { token },
       include: {
         user: {
           select: {
@@ -114,18 +111,50 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    if (!passwordReset) {
+    if (!tokenExists) {
+      console.log('Token not found in database')
       return NextResponse.json(
-        { success: false, message: 'Invalid or expired reset token' },
+        { success: false, message: 'Reset token not found' },
         { status: 400 }
       )
     }
 
+    console.log('Token found:', {
+      id: tokenExists.id,
+      used: tokenExists.used,
+      expiresAt: tokenExists.expiresAt.toISOString(),
+      createdAt: tokenExists.createdAt.toISOString(),
+      email: tokenExists.user.email
+    })
+
+    // Check if token has been used
+    if (tokenExists.used) {
+      console.log('Token has already been used')
+      return NextResponse.json(
+        { success: false, message: 'Reset token has already been used' },
+        { status: 400 }
+      )
+    }
+
+    // Check if token has expired
+    const now = new Date()
+    if (tokenExists.expiresAt <= now) {
+      console.log('Token has expired:', {
+        expiresAt: tokenExists.expiresAt.toISOString(),
+        now: now.toISOString()
+      })
+      return NextResponse.json(
+        { success: false, message: 'Reset token has expired' },
+        { status: 400 }
+      )
+    }
+
+    console.log('Token is valid')
     return NextResponse.json({
       success: true,
       message: 'Token is valid',
       data: {
-        email: passwordReset.user.email,
+        email: tokenExists.user.email,
       },
     })
   } catch (error: unknown) {
