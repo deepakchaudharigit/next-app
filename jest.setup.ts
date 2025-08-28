@@ -294,6 +294,25 @@ beforeEach(() => {
   })
 })
 
+// Global cleanup after all tests
+afterAll(async () => {
+  // Clear all timers and intervals
+  jest.clearAllTimers()
+  jest.useRealTimers()
+  
+  // Clear all mocks
+  jest.clearAllMocks()
+  jest.restoreAllMocks()
+  
+  // Force garbage collection if available
+  if (global.gc) {
+    global.gc()
+  }
+  
+  // Small delay to allow cleanup
+  await new Promise(resolve => setTimeout(resolve, 100))
+})
+
 // Global test utilities
 ;(global as any).testUtils = {
   createMockUser: (overrides: any = {}) => ({

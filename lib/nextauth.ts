@@ -10,6 +10,7 @@ import { verifyPassword } from '@lib/auth'
 import { UserRole } from '@prisma/client'
 import { serverEnv, isDevelopment, isProduction } from '@config/env.server'
 import { authConfig } from '@config/auth'
+import { checkAuthRateLimit, recordFailedAuth, recordSuccessfulAuth, createRateLimitError } from '@lib/rate-limiting'
 
 declare module 'next-auth' {
   interface Session {
@@ -58,13 +59,42 @@ export const authOptions: NextAuthOptions = {
           placeholder: 'Enter your password'
         }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (isDevelopment) {
           console.log('Authorization attempt for:', credentials?.email)
         }
         
         // Return null for missing credentials to prevent authentication
         if (!credentials?.email || !credentials?.password) {
+          return null
+        }
+
+        // Check rate limiting before processing authentication (only checks status)
+        const rateLimitResult = await checkAuthRateLimit(credentials.email, req as any)
+        if (!rateLimitResult.allowed) {
+          if (isDevelopment) {
+            console.log('Rate limit exceeded for:', credentials.email, rateLimitResult)
+          }
+          
+          // Log rate limit event for audit purposes
+          try {
+            await prisma.auditLog.create({
+              data: {
+                userId: null,
+                action: 'login_rate_limited',
+                resource: 'auth',
+                details: { 
+                  email: credentials.email,
+                  attempts: rateLimitResult.totalAttempts,
+                  resetTime: rateLimitResult.resetTime.toISOString()
+                },
+              }
+            })
+          } catch (auditError) {
+            console.warn('Failed to log rate limit audit event:', auditError)
+          }
+          
+          // Return null to prevent authentication
           return null
         }
 
@@ -82,14 +112,59 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user || user.isDeleted) {
+            // Record failed attempt since authentication failed
+            await recordFailedAuth(credentials.email, req as any)
+            
+            // Log failed login attempt
+            try {
+              await prisma.auditLog.create({
+                data: {
+                  userId: null,
+                  action: 'login_failed',
+                  resource: 'auth',
+                  details: { 
+                    email: credentials.email,
+                    reason: 'user_not_found_or_deleted',
+                    method: 'nextauth_credentials'
+                  },
+                }
+              })
+            } catch (auditError) {
+              console.warn('Failed to log failed login audit event:', auditError)
+            }
+            
             return null
           }
 
           const isValidPassword = await verifyPassword(credentials.password, user.password)
           
           if (!isValidPassword) {
+            // Record failed attempt since authentication failed
+            await recordFailedAuth(credentials.email, req as any)
+            
+            // Log failed login attempt
+            try {
+              await prisma.auditLog.create({
+                data: {
+                  userId: user.id,
+                  action: 'login_failed',
+                  resource: 'auth',
+                  details: { 
+                    email: credentials.email,
+                    reason: 'invalid_password',
+                    method: 'nextauth_credentials'
+                  },
+                }
+              })
+            } catch (auditError) {
+              console.warn('Failed to log failed login audit event:', auditError)
+            }
+            
             return null
           }
+          
+          // Record successful authentication (resets rate limit)
+          await recordSuccessfulAuth(credentials.email, req as any)
           
           // Log successful login for audit purposes
           try {
@@ -113,6 +188,28 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error('Authorization error:', error)
+          
+          // Record failed attempt for system errors
+          await recordFailedAuth(credentials.email, req as any)
+          
+          // Log system error for audit purposes
+          try {
+            await prisma.auditLog.create({
+              data: {
+                userId: null,
+                action: 'login_error',
+                resource: 'auth',
+                details: { 
+                  email: credentials.email,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                  method: 'nextauth_credentials'
+                },
+              }
+            })
+          } catch (auditError) {
+            console.warn('Failed to log error audit event:', auditError)
+          }
+          
           return null
         }
       }

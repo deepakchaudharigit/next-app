@@ -27,6 +27,10 @@ jest.mock('@config/auth', () => ({
       maxAge: 86400,
       updateAge: 3600,
     },
+    rateLimit: {
+      windowMs: 60000,
+      maxAttempts: 3,
+    },
   },
 }))
 

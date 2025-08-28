@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@lib/nextauth'
 import { prisma } from '@lib/prisma'
+import { checkAuthRateLimit, recordFailedAuth, recordSuccessfulAuth, createRateLimitError, authRateLimiter } from '@lib/rate-limiting'
 
 /**
  * Test endpoint for login debugging and user JWT information
@@ -130,6 +131,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Check rate limiting first (this only checks status, doesn't increment)
+    const rateLimitResult = await checkAuthRateLimit(email, req)
+    if (!rateLimitResult.allowed) {
+      return NextResponse.json(
+        createRateLimitError(rateLimitResult),
+        { status: 429 }
+      )
+    }
+
     // Import auth utilities
     const { verifyPassword } = await import('@lib/auth')
 
@@ -146,6 +156,9 @@ export async function POST(req: NextRequest) {
     })
 
     if (!user) {
+      // Record failed attempt since authentication failed
+      await recordFailedAuth(email, req)
+      
       return NextResponse.json(
         { 
           success: false, 
@@ -160,6 +173,9 @@ export async function POST(req: NextRequest) {
     const isValidPassword = await verifyPassword(password, user.password)
     
     if (!isValidPassword) {
+      // Record failed attempt since authentication failed
+      await recordFailedAuth(email, req)
+      
       return NextResponse.json(
         { 
           success: false, 
@@ -170,6 +186,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Record successful authentication (resets rate limit)
+    await recordSuccessfulAuth(email, req)
+    
     // Return success without creating session
     return NextResponse.json({
       success: true,
