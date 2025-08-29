@@ -194,7 +194,11 @@ class RateLimiter {
     let oldestAttempt: Date | null = null
 
     // Clean up expired entries and count stats
-    for (const [key, attempt] of this.attempts.entries()) {
+    const entries = Array.from(this.attempts.entries())
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (!entry) continue
+      const [key, attempt] = entry
       if (attempt.firstAttempt < windowStart) {
         this.attempts.delete(key)
         continue
@@ -238,7 +242,11 @@ class RateLimiter {
     const now = new Date()
     const windowStart = new Date(now.getTime() - this.config.windowMs)
 
-    for (const [key, attempt] of this.attempts.entries()) {
+    const entries = Array.from(this.attempts.entries())
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+      if (!entry) continue
+      const [key, attempt] = entry
       if (attempt.firstAttempt < windowStart) {
         this.attempts.delete(key)
       }

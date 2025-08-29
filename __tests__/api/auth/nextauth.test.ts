@@ -232,6 +232,9 @@ describe('NextAuth Configuration', () => {
         password: 'hashedpassword',
         role: UserRole.ADMIN,
         name: 'Test User',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isDeleted: false,
       }
 
       mockPrismaUserFindUnique.mockResolvedValue({

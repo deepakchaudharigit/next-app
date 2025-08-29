@@ -64,9 +64,9 @@ function getMemoryUsage() {
   };
 }
 
-export async function GET(request: NextRequest): Promise<NextResponse> {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   try {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     
     // Perform database connectivity check
     const databaseCheck = await checkDatabase();
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     });
     
-  } catch (error: unknown) {
+  } catch {
     // Handle health check failures
     const errorStatus: HealthStatus = {
       status: 'unhealthy',
@@ -141,12 +141,12 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 }
 
 // Lightweight health check for basic monitoring
-export async function HEAD(request: NextRequest): Promise<NextResponse> {
+export async function HEAD(_request: NextRequest): Promise<NextResponse> {
   try {
     // Quick database connectivity test
     await prisma.$queryRaw`SELECT 1`;
     return new NextResponse(null, { status: 200 });
-  } catch (error: unknown) {
+  } catch {
     return new NextResponse(null, { status: 503 });
   }
 }

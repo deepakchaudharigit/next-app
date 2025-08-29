@@ -9,8 +9,7 @@ import { prisma } from '@lib/prisma'
 import { verifyPassword } from '@lib/auth'
 import { UserRole } from '@prisma/client'
 import { serverEnv, isDevelopment, isProduction } from '@config/env.server'
-import { authConfig } from '@config/auth'
-import { checkAuthRateLimit, recordFailedAuth, recordSuccessfulAuth, createRateLimitError } from '@lib/rate-limiting'
+import { checkAuthRateLimit, recordFailedAuth, recordSuccessfulAuth } from '@lib/rate-limiting'
 
 declare module 'next-auth' {
   interface Session {
@@ -70,6 +69,7 @@ export const authOptions: NextAuthOptions = {
         }
 
         // Check rate limiting before processing authentication (only checks status)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const rateLimitResult = await checkAuthRateLimit(credentials.email, req as any)
         if (!rateLimitResult.allowed) {
           if (isDevelopment) {
@@ -113,6 +113,7 @@ export const authOptions: NextAuthOptions = {
 
           if (!user || user.isDeleted) {
             // Record failed attempt since authentication failed
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await recordFailedAuth(credentials.email, req as any)
             
             // Log failed login attempt
@@ -140,6 +141,7 @@ export const authOptions: NextAuthOptions = {
           
           if (!isValidPassword) {
             // Record failed attempt since authentication failed
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             await recordFailedAuth(credentials.email, req as any)
             
             // Log failed login attempt
@@ -164,6 +166,7 @@ export const authOptions: NextAuthOptions = {
           }
           
           // Record successful authentication (resets rate limit)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await recordSuccessfulAuth(credentials.email, req as any)
           
           // Log successful login for audit purposes
@@ -190,6 +193,7 @@ export const authOptions: NextAuthOptions = {
           console.error('Authorization error:', error)
           
           // Record failed attempt for system errors
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           await recordFailedAuth(credentials.email, req as any)
           
           // Log system error for audit purposes
@@ -244,7 +248,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user, account, profile, email, credentials }) {
+    async signIn() {
       // Allow sign in
       return true
     },
@@ -265,7 +269,7 @@ export const authOptions: NextAuthOptions = {
   },
 
   events: {
-    async signOut({ token, session }) {
+    async signOut({ token }) {
       // Log logout event
       if (token?.id) {
         try {

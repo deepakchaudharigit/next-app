@@ -66,7 +66,7 @@ export function setupMockPrismaWithTestData() {
 
   mockPrisma.auditLog.create.mockResolvedValue({
     id: 'audit-123',
-    userId: 'user-123',
+    userId: null,
     action: 'test',
     resource: 'test',
     details: null,

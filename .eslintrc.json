@@ -1,1 +1,54 @@
-{\n  \"env\": {\n    \"jest\": true,\n    \"node\": true,\n    \"browser\": true,\n    \"es2020\": true\n  },\n  \"extends\": [\n    \"eslint:recommended\",\n    \"plugin:@typescript-eslint/recommended\",\n    \"next/core-web-vitals\",\n    \"plugin:jest/recommended\"\n  ],\n  \"parser\": \"@typescript-eslint/parser\",\n  \"parserOptions\": {\n    \"ecmaVersion\": 2020,\n    \"sourceType\": \"module\"\n  },\n  \"plugins\": [\n    \"@typescript-eslint\",\n    \"jest\"\n  ],\n  \"rules\": {\n    \"react/no-unescaped-entities\": \"off\",\n    \"@next/next/no-page-custom-font\": \"off\",\n    \"@typescript-eslint/no-unused-vars\": \"warn\",\n    \"@typescript-eslint/explicit-module-boundary-types\": \"off\",\n    \"@typescript-eslint/no-explicit-any\": \"warn\",\n    \"@typescript-eslint/no-unused-expressions\": \"off\",\n    \"@typescript-eslint/no-empty-object-type\": \"off\",\n    \"@typescript-eslint/consistent-type-assertions\": \"off\",\n    \"no-console\": \"off\"\n  },\n  \"ignorePatterns\": [\n    \"node_modules/\",\n    \".next/\",\n    \"out/\",\n    \"dist/\",\n    \"build/\",\n    \"*.config.js\",\n    \"*.js\",\n    \"fix-*.js\",\n    \"run-*.js\",\n    \"check-*.js\",\n    \"test-*.js\",\n    \"verify-*.js\",\n    \"validate-*.js\"\n  ],\n  \"settings\": {\n    \"react\": {\n      \"version\": \"detect\"\n    }\n  }\n}
+{
+  "env": {
+    "jest": true,
+    "node": true,
+    "browser": true,
+    "es2020": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "next/core-web-vitals",
+    "plugin:jest/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "jest"
+  ],
+  "rules": {
+    "react/no-unescaped-entities": "off",
+    "@next/next/no-page-custom-font": "off",
+    "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-expressions": "off",
+    "@typescript-eslint/no-empty-object-type": "off",
+    "@typescript-eslint/consistent-type-assertions": "off",
+    "no-console": "off"
+  },
+  "ignorePatterns": [
+    "node_modules/",
+    ".next/",
+    "out/",
+    "dist/",
+    "build/",
+    "*.config.js",
+    "*.js",
+    "fix-*.js",
+    "run-*.js",
+    "check-*.js",
+    "test-*.js",
+    "verify-*.js",
+    "validate-*.js"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  }
+}

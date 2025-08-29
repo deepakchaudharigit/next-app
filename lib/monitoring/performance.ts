@@ -5,7 +5,7 @@
  * tracking metrics, and identifying bottlenecks.
  */
 
-import { prisma } from '@lib/prisma';
+// Performance monitoring utilities - prisma import removed as it's not used
 
 export interface PerformanceMetric {
   name: string;

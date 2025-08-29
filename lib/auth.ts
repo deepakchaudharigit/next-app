@@ -27,21 +27,21 @@ export const verifyPassword = async (
 /**
  * @deprecated Use NextAuth.js session management instead.
  */
-export const generateToken = (user: Pick<User, 'id' | 'email' | 'role'>): never => {
+export const generateToken = (_user: Pick<User, 'id' | 'email' | 'role'>): never => {
   throw new Error('generateToken is deprecated. Use NextAuth.js session management instead.')
 }
 
 /**
  * @deprecated Use NextAuth.js session management instead.
  */
-export const verifyToken = (token: string): never => {
+export const verifyToken = (_token: string): never => {
   throw new Error('verifyToken is deprecated. Use NextAuth.js session management instead.')
 }
 
 /**
  * @deprecated Use NextAuth.js session management instead.
  */
-export const extractTokenFromHeader = (authHeader: string): never => {
+export const extractTokenFromHeader = (_authHeader: string): never => {
   throw new Error('extractTokenFromHeader is deprecated. Use NextAuth.js session management instead.')
 }
 

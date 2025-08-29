@@ -3,12 +3,17 @@
 import { ReactNode } from 'react'
 import { UserRole } from '@prisma/client'
 import { useAuth } from '@/hooks/use-auth'
-import { Permission } from '@lib/rbac'
+import { Permission, permissions } from '@lib/rbac.client'
+
+// Type guard to check if a string is a valid Permission
+function isValidPermission(permission: string): permission is Permission {
+  return permission in permissions
+}
 
 interface RoleGuardProps {
   children: ReactNode
   allowedRoles?: UserRole[]
-  requiredPermission?: Permission
+  requiredPermission?: Permission | string
   fallback?: ReactNode
   requireAll?: boolean // If true, user must have ALL specified roles/permissions
 }
@@ -39,7 +44,7 @@ export function RoleGuard({
   }
 
   // Check permission-based access
-  if (requiredPermission && !hasPermission(requiredPermission as any)) {
+  if (requiredPermission && isValidPermission(requiredPermission) && !hasPermission(requiredPermission)) {
     return <>{fallback}</>
   }
 

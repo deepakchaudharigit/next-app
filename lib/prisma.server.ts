@@ -5,18 +5,8 @@ if (typeof window !== 'undefined') {
   throw new Error('prisma.server.ts should only be imported on the server side')
 }
 
-const getServerEnv = () => {
-  try {
-    const { isProduction } = require('@/config/env.server')
-    return { isProduction }
-  } catch (error) {
-    return {
-      isProduction: process.env.NODE_ENV === 'production'
-    }
-  }
-}
-
-const { isProduction } = getServerEnv()
+// Determine production environment
+const isProduction = process.env.NODE_ENV === 'production'
 
 // Global Prisma instance to prevent multiple connections in development
 const globalForPrisma = globalThis as unknown as {

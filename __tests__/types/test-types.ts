@@ -54,7 +54,7 @@ export interface MockPrismaUser {
 }
 
 export interface MockPrismaAuditLog {
-  create: jest.MockedFunction<(args: { data: Record<string, unknown> }) => Promise<{ id: string; userId: string; action: string; resource: string; details: string | null; ipAddress: string; userAgent: string; createdAt: Date }>>
+  create: jest.MockedFunction<(args: { data: Record<string, unknown> }) => Promise<{ id: string; userId: string | null; action: string; resource: string; details: string | null; ipAddress: string; userAgent: string; createdAt: Date }>>
 }
 
 export interface MockPrisma {

@@ -12,18 +12,7 @@ let prisma: PrismaClient
 // Only initialize Prisma on the server side
 if (typeof window === 'undefined') {
   // Server-side initialization
-  const getServerEnv = () => {
-    try {
-      const { isProduction } = require('@/config/env.server')
-      return { isProduction }
-    } catch (error) {
-      return {
-        isProduction: process.env.NODE_ENV === 'production'
-      }
-    }
-  }
-
-  const { isProduction } = getServerEnv()
+  const isProduction = process.env.NODE_ENV === 'production'
 
   // Create Prisma client with proper configuration
   const createPrismaClient = (): PrismaClient => {

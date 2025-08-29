@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 
 export default function LogoutPage() {
-  const { logout, isLoading } = useAuth()
+  const { logout, isLoading: _isLoading } = useAuth()
 
   useEffect(() => {
     logout()

@@ -1,17 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/use-auth'
 import { LoginForm } from '@/components/auth/LoginForm'
 
-export default function LoginPage() {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function LoginPageContent() {
   const [error, setError] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { data: session, status } = useSession()
+  const { status } = useSession()
   const { login, isLoading } = useAuth()
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
@@ -51,7 +52,7 @@ export default function LoginPage() {
         setError(result.error || 'Login failed')
       }
       // Success is handled by the login function (redirect to dashboard)
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.')
     }
   }
@@ -118,5 +119,26 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function LoginPageLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main export with Suspense boundary
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginPageLoading />}>
+      <LoginPageContent />
+    </Suspense>
   )
 }

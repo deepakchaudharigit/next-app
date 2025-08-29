@@ -4,12 +4,12 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { UserProfile } from '@/components/auth/UserProfile'
 import { RoleGuard, AdminOnly, OperatorOrAdmin } from '@/components/auth/RoleGuard'
-// import { UserRole } from '@/types'
 import { UserRoleEnum } from '@/lib/constants/roles'
+import type { Permission } from '@lib/rbac.client'
 
 export default function DashboardPage() {
-  const { user, isAuthenticated, hasPermission, isLoading } = useAuth()
-  const [dashboardData, setDashboardData] = useState(null)
+  const { user, isAuthenticated, isLoading } = useAuth()
+  const [_dashboardData, setDashboardData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -29,9 +29,9 @@ export default function DashboardPage() {
       } else {
         setError(result.message || 'Failed to load dashboard data')
       }
-    } catch (error) {
+    } catch (err) {
       setError('Network error. Please try again.')
-      console.error('Dashboard error:', error)
+      console.error('Dashboard error:', err)
     } finally {
       setLoading(false)
     }
@@ -120,7 +120,7 @@ export default function DashboardPage() {
               </OperatorOrAdmin>
 
               {/* Permission-based content */}
-              <RoleGuard requiredPermission="reports.view">
+              <RoleGuard requiredPermission={"reports.view" as Permission}>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h3 className="text-lg font-medium text-blue-800 mb-2">
                     Reports & Analytics

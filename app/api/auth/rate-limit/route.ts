@@ -14,8 +14,8 @@ import { getClientIP } from '@lib/auth-utils'
  * Get rate limiting statistics
  * Requires admin authentication
  */
-export async function GET(req: NextRequest) {
-  const { user, response } = await requireAdmin()
+export async function GET(_req: NextRequest) {
+  const { user: _user, response } = await requireAdmin()
   if (response) return response
 
   try {

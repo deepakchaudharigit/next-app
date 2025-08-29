@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@lib/prisma'
 import { hashPassword } from '@lib/auth'
 import { resetPasswordSchema } from '@lib/validations'
-import { logAuditEvent, getClientIP } from '@lib/auth-utils'
+import { logAuditEvent } from '@lib/auth-utils'
 import { ZodError } from 'zod'
 
 export async function POST(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     
     // Validate input
     const validatedData = resetPasswordSchema.parse(body)
-    const { token, newPassword, confirmNewPassword } = validatedData
+    const { token, newPassword } = validatedData
 
     // Find valid reset token
     const passwordReset = await prisma.passwordReset.findFirst({

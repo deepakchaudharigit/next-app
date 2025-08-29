@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@lib/nextauth'
 import { prisma } from '@lib/prisma'
-import { checkAuthRateLimit, recordFailedAuth, recordSuccessfulAuth, createRateLimitError, authRateLimiter } from '@lib/rate-limiting'
+import { checkAuthRateLimit, recordFailedAuth, recordSuccessfulAuth, createRateLimitError } from '@lib/rate-limiting'
 
 /**
  * Test endpoint for login debugging and user JWT information

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { withAuth } from '@lib/auth-utils';
 import { prisma } from '@lib/prisma';
 
@@ -15,7 +15,7 @@ export const GET = withAuth(async (req, user, { params }: { params: Promise<{ id
     }
 
     return NextResponse.json({ success: true, data: report });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, message: 'Error fetching report' }, { status: 500 });
   }
 });
@@ -42,7 +42,7 @@ export const PUT = withAuth(async (req, user, { params }: { params: Promise<{ id
     });
 
     return NextResponse.json({ success: true, data: updated });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, message: 'Error updating report' }, { status: 500 });
   }
 });
@@ -60,7 +60,7 @@ export const DELETE = withAuth(async (req, user, { params }: { params: Promise<{
     await prisma.report.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: 'Report deleted' });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ success: false, message: 'Error deleting report' }, { status: 500 });
   }
 });

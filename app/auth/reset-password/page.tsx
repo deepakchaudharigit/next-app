@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function ResetPasswordPage() {
+// Component that uses useSearchParams - needs to be wrapped in Suspense
+function ResetPasswordPageContent() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -36,7 +37,7 @@ export default function ResetPasswordPage() {
         } else {
           setError(data.message || 'Invalid or expired reset link')
         }
-      } catch (error) {
+      } catch {
         setError('Network error. Please try again.')
       } finally {
         setIsVerifying(false)
@@ -81,7 +82,7 @@ export default function ResetPasswordPage() {
       } else {
         setError(data.message || 'An error occurred')
       }
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.')
     } finally {
       setIsLoading(false)
@@ -214,5 +215,26 @@ export default function ResetPasswordPage() {
         </form>
       </div>
     </div>
+  )
+}
+
+// Loading component for Suspense fallback
+function ResetPasswordPageLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
+// Main export with Suspense boundary
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<ResetPasswordPageLoading />}>
+      <ResetPasswordPageContent />
+    </Suspense>
   )
 }

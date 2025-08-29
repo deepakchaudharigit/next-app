@@ -79,7 +79,7 @@ export const createMockPrisma = (): MockPrisma => {
   mockUserFindUnique.mockResolvedValue(null)
   mockAuditLogCreate.mockResolvedValue({
     id: 'audit-log-id',
-    userId: 'user-id',
+    userId: null,
     action: 'test',
     resource: 'test',
     details: null,

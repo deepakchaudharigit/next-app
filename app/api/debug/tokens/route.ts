@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@lib/prisma'
 
 // Debug endpoint to check password reset tokens
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Only enable in development
     if (process.env.NODE_ENV === 'production') {

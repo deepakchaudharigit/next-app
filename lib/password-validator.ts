@@ -50,7 +50,7 @@ export function validatePassword(password: string): PasswordValidationResult {
   }
 
   // Check for special character
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
     return {
       success: false,
       message: "Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)"

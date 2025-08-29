@@ -3,7 +3,6 @@
  * Fixed: Mock initialization order and TypeScript types
  */
 
-import { NextRequest } from 'next/server'
 import { UserRole } from '@prisma/client'
 
 // ----------------------------

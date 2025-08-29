@@ -68,7 +68,7 @@ export default function ChangePasswordPage() {
       } else {
         setError(data.message || 'An error occurred')
       }
-    } catch (error) {
+    } catch {
       setError('Network error. Please try again.')
     } finally {
       setIsLoading(false)

@@ -4,12 +4,12 @@ import { prisma } from '@lib/prisma';
 import { hashPassword } from '@lib/auth';
 import { registerSchema } from '@lib/validations';
 import { ZodError } from 'zod';
-import { UserRole } from '@prisma/client';
+// UserRole is imported by registerSchema validation
 
 // ──────────────────────────────────────────────
 // GET /api/auth/users — Fetch all users (admin)
 // ──────────────────────────────────────────────
-export const GET = withAdminAuth(async (req: NextRequest, sessionUser) => {
+export const GET = withAdminAuth(async (_req: NextRequest, _sessionUser) => {
   try {
     const users = await prisma.user.findMany({
       select: {

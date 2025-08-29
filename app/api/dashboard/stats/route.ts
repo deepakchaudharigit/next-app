@@ -4,7 +4,7 @@ import { prisma } from '@lib/prisma'
 import { dashboardStatsQuerySchema } from '@lib/validations'
 import { ZodError } from 'zod'
 
-export const GET = withAuth(async (req: NextRequest, sessionUser) => {
+export const GET = withAuth(async (req: NextRequest, _sessionUser) => {
   try {
     const { searchParams } = new URL(req.url)
     
@@ -24,7 +24,7 @@ export const GET = withAuth(async (req: NextRequest, sessionUser) => {
       )
     }
     
-    const { timeRange, includeOffline } = validationResult.data
+    const { timeRange } = validationResult.data
     
     // Calculate time window based on timeRange
     const now = new Date()

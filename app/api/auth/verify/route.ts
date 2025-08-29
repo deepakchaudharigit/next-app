@@ -11,7 +11,7 @@ import { prisma } from '@lib/prisma'
  * 
  * Returns: { success: boolean, user?: object, error?: string }
  */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const user = await getAuthenticatedUser()
     
@@ -87,7 +87,7 @@ export async function GET(req: NextRequest) {
  * POST endpoint information
  * POST /api/auth/verify
  */
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   return NextResponse.json({
     message: 'This endpoint only supports GET requests',
     availableEndpoints: {
