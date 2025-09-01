@@ -1,6 +1,9 @@
 # Docker Compose Development Override
 # This file extends docker-compose.yml for development environment
 
+# Use the same project name
+name: npcl-dashboard
+
 services:
   postgres:
     # Development-specific PostgreSQL configuration
@@ -18,11 +21,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: npcl-dashboard-dkch
+    image: npcl-dashboard:dev
+    container_name: npcl-dashboard-dev
     env_file: .env.docker
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-SecurePassword2025!}@postgres:5432/${POSTGRES_DB:-npcl-auth-db-dev}?schema=public
       - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
       - DEBUG=${DEBUG:-false}
@@ -33,12 +38,9 @@ services:
       - CHOKIDAR_USEPOLLING=false
       - CHOKIDAR_INTERVAL=1000
       - UV_THREADPOOL_SIZE=4
-      # Prisma engine paths for Debian/glibc (auto-detected, but can be explicit)
-      # - PRISMA_QUERY_ENGINE_LIBRARY=/app/node_modules/.prisma/client/libquery_engine-debian-openssl-1.1.x.so.node
-      # - PRISMA_QUERY_ENGINE_BINARY=/app/node_modules/.prisma/client/query-engine-debian-openssl-1.1.x
-      # Let Prisma auto-detect the correct engine for better compatibility
     ports:
       - "3000:3000"
+      - "5555:5555"  # Prisma Studio
     deploy:
       resources:
         limits:
@@ -48,7 +50,7 @@ services:
           memory: 2G
           cpus: '1.0'
     volumes:
-      # Mount only essential directories to reduce memory usage
+      # Mount source code for hot reloading in development
       - ./app:/app/app:ro
       - ./components:/app/components:ro
       - ./lib:/app/lib:ro
@@ -67,8 +69,8 @@ services:
       - dev_logs:/app/logs
       - dev_node_modules:/app/node_modules
       - dev_next:/app/.next
-    # Use memory-optimized startup script
-    command: ["/bin/bash", "-c", "chmod +x ./scripts/docker/startup-memory-optimized.sh && ./scripts/docker/startup-memory-optimized.sh || npm run dev"]
+    # Development startup command
+    command: ["/bin/bash", "-c", "while ! pg_isready -h postgres -p 5432 -U postgres; do sleep 2; done && npm install && npx prisma generate && npx prisma db push && npm run dev"]
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health || exit 1"]
       interval: 30s

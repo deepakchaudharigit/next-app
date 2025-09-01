@@ -9,7 +9,6 @@ import { prisma } from '@lib/prisma'
 import { verifyPassword } from '@lib/auth'
 import { UserRole } from '@prisma/client'
 import { serverEnv, isDevelopment, isProduction } from '@config/env.server'
-import { checkAuthRateLimit, recordFailedAuth, recordSuccessfulAuth } from '@lib/rate-limiting'
 
 declare module 'next-auth' {
   interface Session {
@@ -45,6 +44,7 @@ export const authOptions: NextAuthOptions = {
   
   providers: [
     CredentialsProvider({
+      id: 'credentials',
       name: 'credentials',
       credentials: {
         email: { 
@@ -58,43 +58,18 @@ export const authOptions: NextAuthOptions = {
           placeholder: 'Enter your password'
         }
       },
-      async authorize(credentials, req) {
+      async authorize(credentials) {
         if (isDevelopment) {
-          console.log('Authorization attempt for:', credentials?.email)
+          console.log('🔐 Authorization attempt for:', credentials?.email)
+          console.log('🔧 NextAuth URL:', serverEnv.NEXTAUTH_URL)
+          console.log('🔑 NextAuth Secret exists:', !!serverEnv.NEXTAUTH_SECRET)
         }
         
         // Return null for missing credentials to prevent authentication
         if (!credentials?.email || !credentials?.password) {
-          return null
-        }
-
-        // Check rate limiting before processing authentication (only checks status)
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const rateLimitResult = await checkAuthRateLimit(credentials.email, req as any)
-        if (!rateLimitResult.allowed) {
           if (isDevelopment) {
-            console.log('Rate limit exceeded for:', credentials.email, rateLimitResult)
+            console.log('❌ Missing credentials')
           }
-          
-          // Log rate limit event for audit purposes
-          try {
-            await prisma.auditLog.create({
-              data: {
-                userId: null,
-                action: 'login_rate_limited',
-                resource: 'auth',
-                details: { 
-                  email: credentials.email,
-                  attempts: rateLimitResult.totalAttempts,
-                  resetTime: rateLimitResult.resetTime.toISOString()
-                },
-              }
-            })
-          } catch (auditError) {
-            console.warn('Failed to log rate limit audit event:', auditError)
-          }
-          
-          // Return null to prevent authentication
           return null
         }
 
@@ -112,9 +87,9 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user || user.isDeleted) {
-            // Record failed attempt since authentication failed
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await recordFailedAuth(credentials.email, req as any)
+            if (isDevelopment) {
+              console.log('❌ User not found or deleted:', credentials.email)
+            }
             
             // Log failed login attempt
             try {
@@ -140,9 +115,9 @@ export const authOptions: NextAuthOptions = {
           const isValidPassword = await verifyPassword(credentials.password, user.password)
           
           if (!isValidPassword) {
-            // Record failed attempt since authentication failed
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await recordFailedAuth(credentials.email, req as any)
+            if (isDevelopment) {
+              console.log('❌ Invalid password for:', credentials.email)
+            }
             
             // Log failed login attempt
             try {
@@ -165,9 +140,9 @@ export const authOptions: NextAuthOptions = {
             return null
           }
           
-          // Record successful authentication (resets rate limit)
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await recordSuccessfulAuth(credentials.email, req as any)
+          if (isDevelopment) {
+            console.log('✅ Authentication successful for:', credentials.email)
+          }
           
           // Log successful login for audit purposes
           try {
@@ -191,10 +166,6 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error('Authorization error:', error)
-          
-          // Record failed attempt for system errors
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await recordFailedAuth(credentials.email, req as any)
           
           // Log system error for audit purposes
           try {
@@ -222,10 +193,17 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
+      if (isDevelopment) {
+        console.log('🪙 JWT callback triggered:', { trigger, hasUser: !!user, hasToken: !!token })
+      }
+      
       // Persist user data to the token right after signin
       if (user) {
         token.id = user.id
         token.role = user.role
+        if (isDevelopment) {
+          console.log('✅ User data added to token:', { id: user.id, role: user.role })
+        }
       }
       
       // Handle session updates
@@ -241,14 +219,29 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
+      if (isDevelopment) {
+        console.log('📝 Session callback triggered:', { hasSession: !!session, hasToken: !!token })
+      }
+      
       // Send properties to the client
       if (token) {
         session.user.id = token.id
         session.user.role = token.role
+        if (isDevelopment) {
+          console.log('✅ Session updated with user data:', { id: token.id, role: token.role })
+        }
       }
       return session
     },
-    async signIn() {
+    async signIn({ user, account, profile }) {
+      if (isDevelopment) {
+        console.log('🚪 SignIn callback triggered:', { 
+          hasUser: !!user, 
+          hasAccount: !!account, 
+          provider: account?.provider 
+        })
+      }
+      
       // Allow sign in
       return true
     },

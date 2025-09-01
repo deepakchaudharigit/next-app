@@ -28,35 +28,23 @@ RATE_LIMIT_MAX_ATTEMPTS=5
 
 ## Testing Methods
 
-### 1. Automated Testing Script
+### 1. Automated Testing with Jest
 
-Use the provided test script for comprehensive rate limiting testing:
+Use the Jest test suites for comprehensive rate limiting testing:
 
 ```bash
-# Basic test with default settings
-node scripts/testing/test-rate-limiting.js
+# Run all rate limiting tests
+npm run test:security
 
-# Test with specific email and more attempts
-node scripts/testing/test-rate-limiting.js --email user@npcl.com --attempts 10
+# Run specific rate limiting unit tests
+npm test __tests__/lib/rate-limiting.test.ts
 
-# Test with faster attempts (no delay)
-node scripts/testing/test-rate-limiting.js --delay 0
+# Run API integration tests
+npm test __tests__/api/auth/rate-limiting.test.ts
 
-# Test against different environment
-node scripts/testing/test-rate-limiting.js --url https://your-domain.com
+# Run live server tests
+npm run test:live
 ```
-
-#### Script Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--url` | Base URL of the application | `http://localhost:3000` |
-| `--email` | Email to test with | `test@example.com` |
-| `--password` | Password to test with | `wrongpassword` |
-| `--attempts` | Number of attempts to make | `10` |
-| `--delay` | Delay between attempts (ms) | `1000` |
-| `--endpoint` | Endpoint to test | `/api/auth/test-login` |
-| `--verbose` | Enable verbose output | `false` |
 
 ### 2. Manual API Testing
 
@@ -266,8 +254,8 @@ artillery run rate-limit-load-test.yml
 Monitor memory usage during rate limiting:
 
 ```bash
-# Monitor Node.js process
-node --inspect scripts/testing/test-rate-limiting.js --attempts 1000 --delay 10
+# Monitor Node.js process during live tests
+node --inspect node_modules/.bin/jest --config=jest.config.live.cjs
 ```
 
 ## Troubleshooting

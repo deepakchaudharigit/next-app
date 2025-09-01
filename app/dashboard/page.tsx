@@ -1,43 +1,18 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { UserProfile } from '@/components/auth/UserProfile'
+import { DashboardStats } from '@/components/dashboard/DashboardStats'
 import { RoleGuard, AdminOnly, OperatorOrAdmin } from '@/components/auth/RoleGuard'
 import { UserRoleEnum } from '@/lib/constants/roles'
 import type { Permission } from '@lib/rbac.client'
 
 export default function DashboardPage() {
   const { user, isAuthenticated, isLoading } = useAuth()
-  const [_dashboardData, setDashboardData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [timeRange, setTimeRange] = useState('24h')
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchDashboardData()
-    }
-  }, [isAuthenticated])
-
-  const fetchDashboardData = async () => {
-    try {
-      const response = await fetch('/api/dashboard/stats')
-      const result = await response.json()
-
-      if (result.success) {
-        setDashboardData(result.data)
-      } else {
-        setError(result.message || 'Failed to load dashboard data')
-      }
-    } catch (err) {
-      setError('Network error. Please try again.')
-      console.error('Dashboard error:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (isLoading || loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -83,6 +58,26 @@ export default function DashboardPage() {
 
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-6">
+              {/* Time Range Selector */}
+              <div className="bg-white shadow rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium text-gray-900">Dashboard Overview</h3>
+                  <select
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="1h">Last Hour</option>
+                    <option value="24h">Last 24 Hours</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Dashboard Stats */}
+              <DashboardStats timeRange={timeRange} />
+
               {/* Role-based content */}
               <AdminOnly>
                 <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -135,40 +130,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </RoleGuard>
-
-              {/* General dashboard content */}
-              <div className="bg-white shadow rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  System Overview
-                </h3>
-                
-                {error ? (
-                  <div className="text-red-600 text-center py-4">
-                    {error}
-                    <button
-                      onClick={fetchDashboardData}
-                      className="block mx-auto mt-2 bg-indigo-600 text-white px-4 py-2 rounded-md text-sm hover:bg-indigo-700"
-                    >
-                      Retry
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-gray-900">Total Capacity</h4>
-                      <p className="text-2xl font-bold text-indigo-600">1,550 MW</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-gray-900">Current Generation</h4>
-                      <p className="text-2xl font-bold text-green-600">1,245 MW</p>
-                    </div>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="font-medium text-gray-900">Efficiency</h4>
-                      <p className="text-2xl font-bold text-yellow-600">80.3%</p>
-                    </div>
-                  </div>
-                )}
-              </div>
 
               {/* Role-specific features */}
               <div className="bg-white shadow rounded-lg p-6">

@@ -1,3 +1,9 @@
+# NPCL Dashboard Docker Compose Configuration
+# Main configuration file for production and development
+
+# Set project name to avoid naming conflicts
+name: npcl-dashboard
+
 services:
   postgres:
     image: postgres:15-alpine
@@ -25,18 +31,25 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-    container_name: npcl-dashboard-dkch
+    image: npcl-dashboard:dev
+    container_name: npcl-dashboard-app
     restart: unless-stopped
     env_file: .env.docker
     environment:
+      # NextAuth Configuration - Critical for authentication
       - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      # Node Environment
       - NODE_ENV=development
       - NEXT_TELEMETRY_DISABLED=1
+      # Development optimizations
       - WATCHPACK_POLLING=true
       - NODE_OPTIONS=--max-old-space-size=3072 --max-semi-space-size=256 --optimize-for-size
       - CHOKIDAR_USEPOLLING=false
       - CHOKIDAR_INTERVAL=1000
       - UV_THREADPOOL_SIZE=4
+      # Database connection
+      - DATABASE_URL=${DATABASE_URL}
     ports:
       - "3000:3000"
       - "5555:5555"

@@ -1,6 +1,6 @@
 # NPCL Dashboard
 
-A comprehensive Power Management Dashboard for NPCL (Noida Power Company Limited) built with Next.js 14, TypeScript, Prisma, and PostgreSQL.
+A comprehensive Power Management Dashboard for NPCL built with Next.js 14, TypeScript, Prisma, and PostgreSQL.
 
 ## Features
 
@@ -26,7 +26,7 @@ A comprehensive Power Management Dashboard for NPCL (Noida Power Company Limited
 
 ```
 npcl-dashboard/
-├── app/                    # Next.js App Router
+├── app/                   # Next.js App Router
 │   ├── api/               # API routes
 │   ├── auth/              # Authentication pages
 │   ├── dashboard/         # Dashboard pages
