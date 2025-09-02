@@ -9,6 +9,18 @@ import { UserRole } from './types/auth'
 
 export default withAuth(
   function middleware(req) {
+    // Performance optimization: Add cache headers for static assets
+    const response = NextResponse.next()
+    
+    // Add performance headers
+    response.headers.set('X-DNS-Prefetch-Control', 'on')
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    
+    // BFCache optimization - avoid no-store for navigation
+    if (req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname === '/') {
+      response.headers.set('Cache-Control', 'private, max-age=0, must-revalidate')
+    }
     const token = req.nextauth.token
     const { pathname } = req.nextUrl
 
@@ -28,7 +40,7 @@ export default withAuth(
 
     // Allow access to public routes without authentication
     if (isPublicRoute) {
-      return NextResponse.next()
+      return response
     }
 
     // Redirect unauthenticated users to login page
@@ -83,14 +95,18 @@ export default withAuth(
       requestHeaders.set('x-user-role', userRole)
       requestHeaders.set('x-user-email', token.email || '')
 
-      return NextResponse.next({
+      const apiResponse = NextResponse.next({
         request: {
           headers: requestHeaders,
         },
       })
+      
+      // Add performance headers for API routes
+      apiResponse.headers.set('Cache-Control', 'private, no-cache')
+      return apiResponse
     }
 
-    return NextResponse.next()
+    return response
   },
   {
     callbacks: {

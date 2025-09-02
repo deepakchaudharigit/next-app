@@ -11,7 +11,7 @@ const isDevelopment = process.env.NODE_ENV === 'development'
 export const debugLog = (context: string, message: string, data?: any) => {
   if (!isDevelopment) return
   
-  const timestamp = new Date().toISOString().split('T')[1].split('.')[0]
+  const timestamp = new Date().toISOString().split('T')[1]?.split('.')[0] || '00:00:00'
   const prefix = `🔍 [${timestamp}] [${context}]`
   
   if (data) {

@@ -2,6 +2,244 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Critical CSS - inline the most important styles for performance */
+@layer base {
+  /* Critical mobile styles - loaded first to prevent layout shift */
+  html {
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Improve font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  body {
+    overflow-x: hidden;
+    /* Disable tap highlights for better mobile UX */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    /* Prevent forced reflows */
+    contain: layout style;
+  }
+  
+  /* Critical layout styles to prevent CLS */
+  .min-h-screen {
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile */
+  }
+  
+  /* Touch manipulation for better mobile performance */
+  * {
+    touch-action: manipulation;
+  }
+  
+  /* Prevent layout shifts from images */
+  img {
+    height: auto;
+    max-width: 100%;
+  }
+}
+
+/* Import mobile-optimized styles - loaded after critical styles */
+@import '../styles/mobile.css' layer(mobile);
+
+/* Enhanced mobile-first responsive design */
+@layer base {
+  html {
+    /* Prevent horizontal scroll on mobile */
+    overflow-x: hidden;
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    /* Prevent text size adjustment on mobile */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  body {
+    /* Prevent horizontal scroll */
+    overflow-x: hidden;
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Disable tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
+    /* Prevent text selection on UI elements */
+    -webkit-touch-callout: none;
+  }
+  
+  /* Fix for iOS Safari viewport height issues */
+  @supports (-webkit-touch-callout: none) {
+    .min-h-screen {
+      min-height: -webkit-fill-available;
+    }
+  }
+}
+
+@layer components {
+  /* Enhanced touch targets for mobile */
+  .btn {
+    @apply min-h-[44px] px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500 active:bg-indigo-800;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500 active:bg-gray-400;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800;
+  }
+  
+  /* Mobile-optimized form inputs */
+  .form-input {
+    @apply block w-full px-4 py-3 text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200;
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .form-input:invalid {
+    @apply border-red-300 text-red-900;
+  }
+  
+  /* Mobile-friendly cards */
+  .card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6;
+  }
+  
+  .card-header {
+    @apply flex items-center justify-between mb-4;
+  }
+  
+  .card-title {
+    @apply text-lg font-semibold text-gray-900;
+  }
+  
+  .card-content {
+    @apply text-gray-600;
+  }
+  
+  /* Responsive navigation */
+  .nav-link {
+    @apply flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200;
+  }
+  
+  .nav-link-active {
+    @apply bg-indigo-100 text-indigo-700;
+  }
+  
+  .nav-link-inactive {
+    @apply text-gray-600 hover:text-gray-900 hover:bg-gray-50;
+  }
+}
+
+@layer utilities {
+  /* Safe area utilities for mobile devices */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+  
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Touch-friendly utilities */
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+  
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+  
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+  
+  .touch-none {
+    touch-action: none;
+  }
+  
+  /* Mobile-specific display utilities */
+  .mobile-only {
+    @apply block md:hidden;
+  }
+  
+  .desktop-only {
+    @apply hidden md:block;
+  }
+  
+  /* Enhanced focus states for accessibility */
+  .focus-visible {
+    @apply focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+  }
+  
+  /* Smooth transitions for mobile interactions */
+  .transition-mobile {
+    @apply transition-all duration-200 ease-out;
+  }
+  
+  /* Mobile-optimized text sizes */
+  .text-mobile-xs {
+    font-size: 12px;
+    line-height: 16px;
+  }
+  
+  .text-mobile-sm {
+    font-size: 14px;
+    line-height: 20px;
+  }
+  
+  .text-mobile-base {
+    font-size: 16px;
+    line-height: 24px;
+  }
+  
+  .text-mobile-lg {
+    font-size: 18px;
+    line-height: 28px;
+  }
+  
+  .text-mobile-xl {
+    font-size: 20px;
+    line-height: 32px;
+  }
+  
+  /* Responsive spacing utilities */
+  .space-mobile-y > * + * {
+    margin-top: 0.75rem;
+  }
+  
+  @screen sm {
+    .space-mobile-y > * + * {
+      margin-top: 1rem;
+    }
+  }
+  
+  .space-mobile-x > * + * {
+    margin-left: 0.75rem;
+  }
+  
+  @screen sm {
+    .space-mobile-x > * + * {
+      margin-left: 1rem;
+    }
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

@@ -1,0 +1,6 @@
+<svg width="152" height="152" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
+  <rect width="152" height="152" fill="#4f46e5" rx="19"/>
+  <text x="50%" y="45%" font-family="Arial, sans-serif" font-size="22.8" font-weight="bold" fill="white" text-anchor="middle" dominant-baseline="middle">NPCL</text>
+  <text x="50%" y="65%" font-family="Arial, sans-serif" font-size="12.16" fill="#e0e7ff" text-anchor="middle" dominant-baseline="middle">Dashboard</text>
+  <path d="M60.800000000000004 38L53.199999999999996 53.199999999999996h15.200000000000001l-7.6000000000000005 15.200000000000001 22.8-15.200000000000001h-15.200000000000001l7.6000000000000005-15.200000000000001z" fill="white"/>
+</svg>

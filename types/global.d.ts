@@ -3,18 +3,24 @@
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
+      NODE_ENV: 'development' | 'production' | 'test';
       DATABASE_URL: string;
       NEXTAUTH_SECRET: string;
       NEXTAUTH_URL: string;
-      NODE_ENV: 'development' | 'production' | 'test';
-      POSTGRES_DB?: string;
-      POSTGRES_USER?: string;
-      POSTGRES_PASSWORD?: string;
-      EMAIL_HOST?: string;
-      EMAIL_PORT?: string;
-      EMAIL_USER?: string;
-      EMAIL_PASS?: string;
     }
+  }
+  
+  interface Window {
+    gtag?: (
+      command: 'event',
+      eventName: string,
+      parameters?: {
+        event_category?: string;
+        value?: number;
+        metric_rating?: string;
+        custom_parameter_1?: string;
+      }
+    ) => void;
   }
 }
 

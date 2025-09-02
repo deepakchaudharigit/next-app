@@ -1,7 +1,7 @@
 import { prisma } from '@lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import { Parser } from '@json2csv/plainjs';
-import ExcelJS from 'exceljs';
+
+// Dynamic imports for server-only packages to reduce bundle size
 
 // Utility: clean data for export
 function sanitizeForExport(row: Record<string, unknown>): Record<string, unknown> {
@@ -91,6 +91,8 @@ export async function GET(req: NextRequest) {
 
     // === CSV Export ===
     if (format === 'csv') {
+      // Dynamic import to avoid including in client bundle
+      const { Parser } = await import('@json2csv/plainjs')
       const parser = new Parser({ defaultValue: '' })
       const csv = parser.parse(processedData)
 
@@ -104,6 +106,8 @@ export async function GET(req: NextRequest) {
 
     // === Excel Export ===
     if (format === 'xls' || format === 'xlsx') {
+      // Dynamic import to avoid including in client bundle
+      const ExcelJS = (await import('exceljs')).default
       const workbook = new ExcelJS.Workbook()
       const sheet = workbook.addWorksheet('Voicebot Calls')
 

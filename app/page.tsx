@@ -4,6 +4,18 @@
  */
 
 import Link from 'next/link'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'NPCL Dashboard - Power Management System',
+  description: 'Welcome to NPCL Dashboard - A comprehensive power management system for real-time monitoring, analytics, and grid operations. Login to access advanced power generation and distribution tools.',
+  keywords: ['NPCL', 'power management', 'dashboard', 'energy monitoring', 'grid operations', 'power generation', 'electricity management'],
+  openGraph: {
+    title: 'NPCL Dashboard - Power Management System',
+    description: 'Comprehensive power management system for real-time monitoring and analytics',
+    type: 'website',
+  },
+}
 
 export default function HomePage() {
   return (
