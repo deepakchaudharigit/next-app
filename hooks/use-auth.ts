@@ -9,7 +9,6 @@ import { useSession, signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { UserRole } from '@prisma/client'
 import { hasPermission, Permission, checkUserPermission } from '@lib/rbac.client'
-import { performLogout } from '@lib/logout-utils'
 import { useState, useCallback } from 'react'
 
 export function useAuth() {
@@ -51,14 +50,12 @@ export function useAuth() {
   const logout = useCallback(async () => {
     setIsLoading(true)
     try {
-      const result = await performLogout()
-      if (result.success) {
-        router.push('/auth/login')
-        return { success: true, message: result.message }
-      } else {
-        console.error('Logout failed:', result.message)
-        return { success: false, error: result.message }
-      }
+      // Use NextAuth's built-in signOut with redirect to login page
+      await signOut({ 
+        callbackUrl: '/auth/login',
+        redirect: true 
+      })
+      return { success: true, message: 'Logged out successfully' }
     } catch (error) {
       console.error('Logout error:', error)
       return {
@@ -68,7 +65,7 @@ export function useAuth() {
     } finally {
       setIsLoading(false)
     }
-  }, [router])
+  }, [])
 
   const hasRole = useCallback((role: UserRole): boolean => {
     return user?.role === role

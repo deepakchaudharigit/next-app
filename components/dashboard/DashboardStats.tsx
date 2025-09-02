@@ -3,7 +3,7 @@
  * Displays key system metrics and statistics with visual indicators for NPCL Dashboard.
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 interface DashboardStatsData {
   totalUsers: number
@@ -32,11 +32,7 @@ export function DashboardStats({ timeRange = '24h' }: DashboardStatsProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    fetchStats()
-  }, [timeRange])
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setIsLoading(true)
     setError('')
 
@@ -57,7 +53,11 @@ export function DashboardStats({ timeRange = '24h' }: DashboardStatsProps) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [timeRange])
+
+  useEffect(() => {
+    fetchStats()
+  }, [fetchStats])
 
   if (isLoading) {
     return (

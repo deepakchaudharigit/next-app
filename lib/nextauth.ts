@@ -233,7 +233,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile: _profile }) {
       if (isDevelopment) {
         console.log('🚪 SignIn callback triggered:', { 
           hasUser: !!user, 
@@ -257,7 +257,6 @@ export const authOptions: NextAuthOptions = {
 
   pages: {
     signIn: '/auth/login',
-    signOut: '/auth/logout',
     error: '/auth/error',
   },
 

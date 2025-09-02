@@ -160,8 +160,9 @@ describe('NextAuth Configuration', () => {
 
   it('should have correct pages configured', () => {
     expect(authOptions.pages?.signIn).toBe('/auth/login')
-    expect(authOptions.pages?.signOut).toBe('/auth/logout')
     expect(authOptions.pages?.error).toBe('/auth/error')
+    // signOut page removed - using NextAuth default
+    expect(authOptions.pages?.signOut).toBeUndefined()
   })
 
   it('should have callbacks configured', () => {

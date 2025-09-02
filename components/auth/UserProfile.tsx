@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/use-auth'
 import { getRoleDisplayName, getRoleDescription } from '@lib/rbac.client'
+import { UserRole } from '@prisma/client'
 
 interface ProfileData {
   id: string
   name: string
   email: string
-  role: string
+  role: UserRole
   createdAt: string
   updatedAt: string
   _count: {

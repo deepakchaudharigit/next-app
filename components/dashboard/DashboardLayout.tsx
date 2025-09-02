@@ -1,38 +1,17 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
-import { UserRole } from '@prisma/client'
+import { useAuth } from '@/hooks/use-auth'
+import { LogoutButton } from '@/components/auth/LogoutButton'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-}
-
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [user, setUser] = useState<User | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const router = useRouter()
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user')
-    if (userData) {
-      setUser(JSON.parse(userData))
-    }
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
-    router.push('/auth/login')
-  }
+  const { user, isAuthenticated } = useAuth()
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: '📊' },
@@ -91,17 +70,17 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex flex-1"></div>
             <div className="flex items-center gap-x-4 lg:gap-x-6">
-              {user && (
+              {isAuthenticated && user && (
                 <div className="flex items-center gap-x-4">
                   <span className="text-sm font-medium text-gray-700">
                     {user.name} ({user.role})
                   </span>
-                  <button
-                    onClick={handleLogout}
+                  <LogoutButton 
+                    variant="link"
                     className="text-sm text-gray-500 hover:text-gray-700"
                   >
                     Logout
-                  </button>
+                  </LogoutButton>
                 </div>
               )}
             </div>

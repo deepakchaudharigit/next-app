@@ -8,7 +8,7 @@ import { serverEnv } from '@config/env.server'
  * 
  * GET /api/auth/test-connection
  */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Test database connection
     await prisma.$connect()
