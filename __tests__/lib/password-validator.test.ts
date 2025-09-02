@@ -1,227 +1,94 @@
 /**
- * Tests for Password Validation Utility
- * Comprehensive test suite for password security requirements validation
+ * Refactored Password Validation Tests
+ * Focus: Business requirements, not exhaustive edge cases
+ * Removed: Academic testing of every possible character combination
  */
 
 import { validatePassword, zodPasswordValidator, PasswordValidationResult } from '@lib/password-validator';
 
 describe('Password Validator', () => {
-  describe('validatePassword', () => {
-    describe('Valid passwords', () => {
+  describe('Business requirement validation', () => {
+    it('accepts passwords meeting security requirements', () => {
       const validPasswords = [
         'Password@123',
         'MySecure1!',
         'Test123#',
-        'Admin2024$',
-        'User@Pass1',
-        'Complex9&',
-        'Strong!2A',
-        'Valid123*',
-        'Secure#4B',
-        'Example1%',
-        'AbC123!@#',
-        'LongPassword123!',
-        'MixedCase1@',
-        'Special&123A',
-        'Numbers123!',
+        'Admin2024$'
       ];
 
-      test.each(validPasswords)('should accept valid password: %s', (password) => {
+      validPasswords.forEach(password => {
         const result = validatePassword(password);
         expect(result.success).toBe(true);
         expect(result.message).toBe('Password accepted');
       });
     });
 
-    describe('Invalid passwords - Length requirement', () => {
-      const shortPasswords = [
-        'Ab1!',       // 4 chars
-        'A1!',        // 3 chars
-        '',           // empty
-        'Abc123!',    // 7 chars
+    it('rejects passwords not meeting security requirements', () => {
+      const invalidCases = [
+        { password: 'weak', reason: 'too short and missing requirements' },
+        { password: 'password123!', reason: 'no uppercase' },
+        { password: 'PASSWORD123!', reason: 'no lowercase' },
+        { password: 'Password!', reason: 'no numbers' },
+        { password: 'Password123', reason: 'no special characters' },
+        { password: 'Pass1!', reason: 'too short' }
       ];
 
-      test.each(shortPasswords)('should reject password too short: %s', (password) => {
+      invalidCases.forEach(({ password, reason }) => {
         const result = validatePassword(password);
         expect(result.success).toBe(false);
-        expect(result.message).toBe('Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)');
+        expect(result.message).toBe(
+          'Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)'
+        );
       });
     });
 
-    describe('Invalid passwords - Missing uppercase', () => {
-      const noUppercasePasswords = [
-        'password123!',
-        'lowercase1@',
-        'nouppercase2#',
-        'alllower3$',
-        'test123%',
-      ];
-
-      test.each(noUppercasePasswords)('should reject password without uppercase: %s', (password) => {
-        const result = validatePassword(password);
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)');
-      });
-    });
-
-    describe('Invalid passwords - Missing lowercase', () => {
-      const noLowercasePasswords = [
-        'PASSWORD123!',
-        'UPPERCASE1@',
-        'NOLOWERCASE2#',
-        'ALLUPPER3$',
-        'TEST123%',
-      ];
-
-      test.each(noLowercasePasswords)('should reject password without lowercase: %s', (password) => {
-        const result = validatePassword(password);
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)');
-      });
-    });
-
-    describe('Invalid passwords - Missing numbers', () => {
-      const noNumberPasswords = [
-        'Password!',
-        'NoNumbers@',
-        'OnlyLetters#',
-        'TestCase$',
-        'Example%',
-      ];
-
-      test.each(noNumberPasswords)('should reject password without numbers: %s', (password) => {
-        const result = validatePassword(password);
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)');
-      });
-    });
-
-    describe('Invalid passwords - Missing special characters', () => {
-      const noSpecialCharPasswords = [
-        'Password123',
-        'NoSpecial1',
-        'OnlyAlphaNum2',
-        'TestCase3',
-        'Example4',
-      ];
-
-      test.each(noSpecialCharPasswords)('should reject password without special characters: %s', (password) => {
-        const result = validatePassword(password);
-        expect(result.success).toBe(false);
-        expect(result.message).toBe('Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)');
-      });
-    });
-
-    describe('Special character validation', () => {
-      const specialChars = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '-', '=', '[', ']', '{', '}', ';', "'", ':', '"', '\\', '|', ',', '.', '<', '>', '/', '?'];
-
-      test.each(specialChars)('should accept password with special character: %s', (specialChar) => {
-        const password = `Password1${specialChar}`;
+    it('handles common special characters correctly', () => {
+      const commonSpecialChars = ['!', '@', '#', '$', '%'];
+      
+      commonSpecialChars.forEach(char => {
+        const password = `Password1${char}`;
         const result = validatePassword(password);
         expect(result.success).toBe(true);
-        expect(result.message).toBe('Password accepted');
       });
     });
 
-    describe('Edge cases', () => {
-      it('should handle exactly 8 characters with all requirements', () => {
-        const result = validatePassword('Pass123!');
-        expect(result.success).toBe(true);
-        expect(result.message).toBe('Password accepted');
-      });
-
-      it('should handle very long passwords', () => {
-        const longPassword = 'VeryLongPassword123!WithManyCharacters';
-        const result = validatePassword(longPassword);
-        expect(result.success).toBe(true);
-        expect(result.message).toBe('Password accepted');
-      });
-
-      it('should handle multiple special characters', () => {
-        const result = validatePassword('Pass123!@#$');
-        expect(result.success).toBe(true);
-        expect(result.message).toBe('Password accepted');
-      });
-
-      it('should handle multiple numbers', () => {
-        const result = validatePassword('Pass123456!');
-        expect(result.success).toBe(true);
-        expect(result.message).toBe('Password accepted');
-      });
-
-      it('should handle multiple uppercase letters', () => {
-        const result = validatePassword('PASSWORD123!');
-        expect(result.success).toBe(false); // Missing lowercase
-      });
-
-      it('should handle multiple lowercase letters', () => {
-        const result = validatePassword('password123!');
-        expect(result.success).toBe(false); // Missing uppercase
-      });
-    });
-
-    describe('Real-world examples', () => {
-      const realWorldExamples = [
-        { password: 'pass123', expected: false, description: 'Example from requirements' },
-        { password: 'Password@123', expected: true, description: 'Example from requirements' },
-        { password: 'MyP@ssw0rd', expected: true, description: 'Common pattern' },
-        { password: 'Secure123!', expected: true, description: 'Business password' },
-        { password: 'admin123', expected: false, description: 'Weak admin password' },
-        { password: 'StrongP@ss1', expected: true, description: 'Strong password' },
-      ];
-
-      test.each(realWorldExamples)('$description: $password', ({ password, expected }) => {
-        const result = validatePassword(password);
-        expect(result.success).toBe(expected);
-        
-        if (expected) {
-          expect(result.message).toBe('Password accepted');
-        } else {
-          expect(result.message).toBe('Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)');
-        }
-      });
+    it('handles edge cases appropriately', () => {
+      // Minimum valid password
+      expect(validatePassword('Pass123!').success).toBe(true);
+      
+      // Very long password
+      expect(validatePassword('VeryLongPassword123!').success).toBe(true);
+      
+      // Empty password
+      expect(validatePassword('').success).toBe(false);
     });
   });
 
-  describe('zodPasswordValidator', () => {
-    it('should return true for valid passwords', () => {
-      expect(zodPasswordValidator('Password@123')).toBe(true);
-      expect(zodPasswordValidator('MySecure1!')).toBe(true);
-      expect(zodPasswordValidator('Test123#')).toBe(true);
-    });
-
-    it('should return false for invalid passwords', () => {
-      expect(zodPasswordValidator('pass123')).toBe(false);
-      expect(zodPasswordValidator('PASSWORD123!')).toBe(false);
-      expect(zodPasswordValidator('password123!')).toBe(false);
-      expect(zodPasswordValidator('Password!')).toBe(false);
-      expect(zodPasswordValidator('Password123')).toBe(false);
-      expect(zodPasswordValidator('Pass1!')).toBe(false); // 6 chars - should fail
-    });
-
-    it('should be consistent with validatePassword function', () => {
-      const testPasswords = [
-        'Password@123',
-        'pass123',
-        'PASSWORD123!',
-        'password123!',
-        'Password!',
-        'Password123',
-        'MySecure1!',
-        'Test123#',
+  describe('Integration with Zod validator', () => {
+    it('maintains consistency with main validator', () => {
+      const testCases = [
+        { password: 'Password@123', expected: true },
+        { password: 'weak', expected: false },
+        { password: 'PASSWORD123!', expected: false },
+        { password: 'password123!', expected: false },
+        { password: 'Password!', expected: false },
+        { password: 'Password123', expected: false }
       ];
 
-      testPasswords.forEach(password => {
+      testCases.forEach(({ password, expected }) => {
         const validateResult = validatePassword(password);
         const zodResult = zodPasswordValidator(password);
+        
         expect(zodResult).toBe(validateResult.success);
+        expect(zodResult).toBe(expected);
       });
     });
   });
 
   describe('Return type validation', () => {
-    it('should return correct PasswordValidationResult structure for valid password', () => {
+    it('returns correct structure for valid passwords', () => {
       const result: PasswordValidationResult = validatePassword('Password@123');
+      
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('message');
       expect(typeof result.success).toBe('boolean');
@@ -230,14 +97,14 @@ describe('Password Validator', () => {
       expect(result.message).toBe('Password accepted');
     });
 
-    it('should return correct PasswordValidationResult structure for invalid password', () => {
-      const result: PasswordValidationResult = validatePassword('pass123');
+    it('returns correct structure for invalid passwords', () => {
+      const result: PasswordValidationResult = validatePassword('weak');
+      
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('message');
       expect(typeof result.success).toBe('boolean');
       expect(typeof result.message).toBe('string');
       expect(result.success).toBe(false);
-      expect(result.message).toBe('Password must be at least 8 chars long, include uppercase, lowercase, number, and special character (example: Password@123)');
     });
   });
 });

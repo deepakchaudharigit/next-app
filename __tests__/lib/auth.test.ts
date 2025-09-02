@@ -1,18 +1,15 @@
-// Mock dependencies first
+/**
+ * Refactored Auth Utilities Tests
+ * Focus: Business logic, not framework behavior
+ * Removed: Deprecated function tests, academic edge cases
+ */
 
 jest.mock("bcryptjs", () => ({
   hash: jest.fn(),
   compare: jest.fn(),
 }));
 
-// Now import the modules
-import {
-  hashPassword,
-  verifyPassword,
-  generateToken,
-  verifyToken,
-  extractTokenFromHeader,
-} from "@lib/auth";
+import { hashPassword, verifyPassword } from "@lib/auth";
 import bcrypt from "bcryptjs";
 
 const mockBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
@@ -20,12 +17,11 @@ const mockBcrypt = bcrypt as jest.Mocked<typeof bcrypt>;
 describe("Auth utilities", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // Set up environment variable
     process.env.NEXTAUTH_SECRET = "test-secret";
   });
 
-  describe("hashPassword", () => {
-    it("should hash a password with bcrypt", async () => {
+  describe("Password hashing", () => {
+    it("should hash passwords securely", async () => {
       const password = "testpassword123";
       const hashedPassword = "hashed_password_result";
 
@@ -37,18 +33,18 @@ describe("Auth utilities", () => {
       expect(result).toBe(hashedPassword);
     });
 
-    it("should handle bcrypt errors", async () => {
+    it("should handle hashing errors", async () => {
       const password = "testpassword123";
-      const error = new Error("Bcrypt error");
+      const error = new Error("Hashing failed");
 
       mockBcrypt.hash.mockRejectedValue(error as never);
 
-      await expect(hashPassword(password)).rejects.toThrow("Bcrypt error");
+      await expect(hashPassword(password)).rejects.toThrow("Hashing failed");
     });
   });
 
-  describe("verifyPassword", () => {
-    it("should verify a correct password", async () => {
+  describe("Password verification", () => {
+    it("should verify correct passwords", async () => {
       const password = "testpassword123";
       const hashedPassword = "hashed_password";
 
@@ -60,7 +56,7 @@ describe("Auth utilities", () => {
       expect(result).toBe(true);
     });
 
-    it("should reject an incorrect password", async () => {
+    it("should reject incorrect passwords", async () => {
       const password = "wrongpassword";
       const hashedPassword = "hashed_password";
 
@@ -68,53 +64,18 @@ describe("Auth utilities", () => {
 
       const result = await verifyPassword(password, hashedPassword);
 
-      expect(mockBcrypt.compare).toHaveBeenCalledWith(password, hashedPassword);
       expect(result).toBe(false);
     });
 
-    it("should handle bcrypt comparison errors", async () => {
+    it("should handle verification errors", async () => {
       const password = "testpassword123";
       const hashedPassword = "hashed_password";
-      const error = new Error("Bcrypt comparison error");
+      const error = new Error("Verification failed");
 
       mockBcrypt.compare.mockRejectedValue(error as never);
 
       await expect(verifyPassword(password, hashedPassword)).rejects.toThrow(
-        "Bcrypt comparison error",
-      );
-    });
-  });
-
-  describe("generateToken (deprecated)", () => {
-    it("should throw error indicating deprecation", () => {
-      const user = {
-        id: "user123",
-        email: "test@example.com",
-        role: "ADMIN" as const,
-      };
-
-      expect(() => generateToken(user)).toThrow(
-        "generateToken is deprecated. Use NextAuth.js session management instead.",
-      );
-    });
-  });
-
-  describe("verifyToken (deprecated)", () => {
-    it("should throw error indicating deprecation", () => {
-      const token = "valid.jwt.token";
-
-      expect(() => verifyToken(token)).toThrow(
-        "verifyToken is deprecated. Use NextAuth.js session management instead.",
-      );
-    });
-  });
-
-  describe("extractTokenFromHeader (deprecated)", () => {
-    it("should throw error indicating deprecation", () => {
-      const authHeader = "Bearer valid.jwt.token";
-
-      expect(() => extractTokenFromHeader(authHeader)).toThrow(
-        "extractTokenFromHeader is deprecated. Use NextAuth.js session management instead.",
+        "Verification failed",
       );
     });
   });

@@ -53,9 +53,10 @@ const config = {
   
   // Test path ignore patterns
   testPathIgnorePatterns: [
-    '<rootDir>/node_modules/',
-    '<rootDir>/.next/',
-    '<rootDir>/__tests__/utils/',
+    '/node_modules/',
+    '/\.next/',
+    '/__tests__/utils/',
+    '/__tests__backup/',
   ],
   
   // Transform ignore patterns

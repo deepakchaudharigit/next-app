@@ -25,11 +25,12 @@ const config = {
     '**/*.(test|spec).(ts|tsx|js)',
   ],
   testPathIgnorePatterns: [
-    '<rootDir>/__tests__/utils/test-helpers.utils.ts',
-    '<rootDir>/__tests__/utils/test-factories.ts',
-    '<rootDir>/__tests__/test-runner.ts',
-    '<rootDir>/node_modules/',
-    '<rootDir>/.next/',
+    '/__tests__/utils/test-helpers\\.utils\\.ts$',
+    '/__tests__/utils/test-factories\\.ts$',
+    '/__tests__/test-runner\\.ts$',
+    '/__tests__backup/',
+    '/node_modules/',
+    '/\\.next/',
   ],
   collectCoverageFrom: [
     'app/**/*.{ts,tsx}',
@@ -43,7 +44,7 @@ const config = {
   ],
   testTimeout: 10000,
   transformIgnorePatterns: [
-    'node_modules/(?!(jose|@next-auth|next-auth|openid-client|@auth|oauth|preact-render-to-string|preact|.*\\.mjs$))',
+    'node_modules/(?!(jose|@next-auth|next-auth|openid-client|@auth|oauth|preact-render-to-string|preact|.*\\\\.mjs$))',
   ],
   testEnvironmentOptions: {
     customExportConditions: ['node', 'node-addons'],
