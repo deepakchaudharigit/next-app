@@ -1,28 +1,98 @@
 /**
- * Middleware Configuration
- * Handles route protection, authentication checks, and role-based access control for the NPCL Dashboard application.
+ * Enhanced Security Middleware
+ * Handles authentication, RBAC, rate limiting, CSRF protection, and SQL injection prevention
  */
 
 import { withAuth } from 'next-auth/middleware'
 import { NextResponse } from 'next/server'
 import { UserRole } from './types/auth'
+import { rateLimitMiddleware } from './lib/security/rate-limiting-middleware'
+import { csrfProtection } from './lib/security/csrf-protection'
+import { sqlInjectionPrevention } from './lib/security/sql-injection-prevention'
 
 export default withAuth(
-  function middleware(req) {
-    // Performance optimization: Add cache headers for static assets
+  async function middleware(req) {
+    const { pathname } = req.nextUrl
+    
+    // 1. SQL Injection Prevention - Check all inputs
+    const sqlValidation = sqlInjectionPrevention.validateRequest({
+      body: req.body,
+      query: Object.fromEntries(req.nextUrl.searchParams)
+    })
+    
+    if (!sqlValidation.isValid) {
+      const criticalThreats = sqlValidation.threats.filter(
+        t => t.threats.some(threat => threat.severity === 'critical')
+      )
+      
+      if (criticalThreats.length > 0) {
+        console.error('🚨 SQL injection attempt blocked:', {
+          path: pathname,
+          threats: criticalThreats
+        })
+        
+        return NextResponse.json(
+          {
+            success: false,
+            error: {
+              code: 'SECURITY_VIOLATION',
+              message: 'Request blocked due to security policy violation'
+            }
+          },
+          { status: 403 }
+        )
+      }
+    }
+    
+    // 2. Rate Limiting - Apply different limits based on route type
+    let rateLimitResponse: NextResponse | null = null
+    
+    if (pathname.startsWith('/api/auth/')) {
+      rateLimitResponse = await rateLimitMiddleware.checkAuthRateLimit(req)
+    } else if (pathname.startsWith('/api/reports/')) {
+      rateLimitResponse = await rateLimitMiddleware.checkReportRateLimit(req)
+    } else if (pathname.startsWith('/api/')) {
+      rateLimitResponse = await rateLimitMiddleware.checkApiRateLimit(req)
+    }
+    
+    if (rateLimitResponse) {
+      return rateLimitResponse
+    }
+    
+    // 3. CSRF Protection - For state-changing requests
+    const csrfResponse = await csrfProtection.protect(req)
+    if (csrfResponse) {
+      return csrfResponse
+    }
+    
+    // Create response with security headers
     const response = NextResponse.next()
     
-    // Add performance headers
+    // Security headers
     response.headers.set('X-DNS-Prefetch-Control', 'on')
     response.headers.set('X-Frame-Options', 'DENY')
     response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('X-XSS-Protection', '1; mode=block')
+    response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
+    
+    // Content Security Policy
+    const csp = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self' https://fonts.gstatic.com",
+      "connect-src 'self'",
+      "frame-ancestors 'none'"
+    ].join('; ')
+    response.headers.set('Content-Security-Policy', csp)
     
     // BFCache optimization - avoid no-store for navigation
-    if (req.nextUrl.pathname.startsWith('/dashboard') || req.nextUrl.pathname === '/') {
+    if (pathname.startsWith('/dashboard') || pathname === '/') {
       response.headers.set('Cache-Control', 'private, max-age=0, must-revalidate')
     }
     const token = req.nextauth.token
-    const { pathname } = req.nextUrl
 
     // Define routes that don't require authentication
     const publicRoutes = [

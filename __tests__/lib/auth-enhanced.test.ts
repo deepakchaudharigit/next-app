@@ -12,6 +12,15 @@ jest.mock("crypto", () => ({
   })),
 }));
 
+// Mock the auth config
+jest.mock('@config/auth', () => ({
+  authConfig: {
+    bcrypt: {
+      saltRounds: 12,
+    },
+  },
+}));
+
 // Now import the modules
 import {
   hashPassword,

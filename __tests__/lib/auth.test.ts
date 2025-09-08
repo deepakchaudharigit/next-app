@@ -9,6 +9,15 @@ jest.mock("bcryptjs", () => ({
   compare: jest.fn(),
 }));
 
+// Mock the auth config
+jest.mock('@config/auth', () => ({
+  authConfig: {
+    bcrypt: {
+      saltRounds: 12,
+    },
+  },
+}));
+
 import { hashPassword, verifyPassword } from "@lib/auth";
 import bcrypt from "bcryptjs";
 

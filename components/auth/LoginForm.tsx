@@ -42,10 +42,13 @@ export function LoginForm({ onSubmit, isLoading }: LoginFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     
-    if (validateForm()) {
+    const isValid = validateForm()
+    if (isValid) {
       onSubmit(formData)
     }
+    // If not valid, errors are already set by validateForm()
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

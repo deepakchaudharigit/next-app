@@ -9,6 +9,10 @@
  * - Statistics tracking
  */
 
+// Unmock the rate limiting module for this test
+jest.unmock('@/lib/rate-limiting')
+jest.unmock('../../lib/rate-limiting')
+
 import RateLimiter, { 
   authRateLimiter, 
   checkAuthRateLimit, 

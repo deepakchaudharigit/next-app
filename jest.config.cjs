@@ -7,8 +7,12 @@ const createJestConfig = nextJest({
 
 const config = {
   coverageProvider: 'v8',
-  testEnvironment: 'node',
+  testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],
+  verbose: true,
+  errorOnDeprecated: true,
+  bail: false, // Don't stop on first failure
+  maxWorkers: 1, // Run tests sequentially for clearer output
   moduleNameMapper: {
     '^@prisma/client$': '<rootDir>/node_modules/@prisma/client/index.js',
     '^@prisma/client/(.*)$': '<rootDir>/node_modules/@prisma/client/$1',
@@ -44,7 +48,7 @@ const config = {
   ],
   testTimeout: 10000,
   transformIgnorePatterns: [
-    'node_modules/(?!(jose|@next-auth|next-auth|openid-client|@auth|oauth|preact-render-to-string|preact|.*\\\\.mjs$))',
+    'node_modules/(?!(jose|@next-auth|next-auth|openid-client|@auth|oauth|preact-render-to-string|preact|.*\\.mjs$))',
   ],
   testEnvironmentOptions: {
     customExportConditions: ['node', 'node-addons'],

@@ -1,399 +1,370 @@
 /**
- * Performance Monitoring Utilities for NPCL Dashboard
- * 
- * This module provides utilities for monitoring application performance,
- * tracking metrics, and identifying bottlenecks.
+ * Performance Monitoring System
+ * Tracks application performance metrics, response times, and system health
  */
 
-// Performance monitoring utilities - prisma import removed as it's not used
+import { NextRequest, NextResponse } from 'next/server'
 
 export interface PerformanceMetric {
-  name: string;
-  value: number;
-  unit: string;
-  timestamp: Date;
-  tags?: Record<string, string>;
+  name: string
+  value: number
+  unit: string
+  timestamp: Date
+  tags?: Record<string, string>
 }
 
-export interface DatabaseMetrics {
-  connectionCount: number;
-  queryCount: number;
-  avgQueryTime: number;
-  slowQueries: number;
-}
-
-export interface SystemMetrics {
-  cpuUsage: number;
-  memoryUsage: {
-    used: number;
-    total: number;
-    percentage: number;
-  };
-  uptime: number;
-  requestCount: number;
-  errorRate: number;
-}
-
-export interface APIMetrics {
-  endpoint: string;
-  method: string;
-  responseTime: number;
-  statusCode: number;
-  timestamp: Date;
-  userAgent?: string;
-  ip?: string;
+export interface SystemHealth {
+  status: 'healthy' | 'degraded' | 'unhealthy'
+  uptime: number
+  memory: {
+    used: number
+    total: number
+    percentage: number
+  }
+  cpu: {
+    usage: number
+  }
+  database: {
+    status: 'connected' | 'disconnected' | 'error'
+    responseTime: number
+  }
+  redis: {
+    status: 'connected' | 'disconnected' | 'error'
+    responseTime: number
+  }
+  activeConnections: number
+  requestsPerMinute: number
+  errorRate: number
 }
 
 class PerformanceMonitor {
-  private metrics: PerformanceMetric[] = [];
-  private apiMetrics: APIMetrics[] = [];
-  private startTime: number = Date.now();
+  private metrics: PerformanceMetric[] = []
+  private requestCounts = new Map<string, number>()
+  private errorCounts = new Map<string, number>()
+  private responseTimes: number[] = []
+  private startTime = Date.now()
 
-  /**
-   * Record a performance metric
-   */
-  recordMetric(name: string, value: number, unit: string, tags?: Record<string, string>): void {
-    this.metrics.push({
-      name,
-      value,
-      unit,
+  // Track API request performance
+  trackRequest(req: NextRequest, startTime: number, statusCode: number) {
+    const endTime = Date.now()
+    const responseTime = endTime - startTime
+    const route = this.normalizeRoute(req.nextUrl.pathname)
+    
+    // Track response time
+    this.responseTimes.push(responseTime)
+    if (this.responseTimes.length > 1000) {
+      this.responseTimes = this.responseTimes.slice(-1000) // Keep last 1000
+    }
+
+    // Track request counts
+    const currentCount = this.requestCounts.get(route) || 0
+    this.requestCounts.set(route, currentCount + 1)
+
+    // Track error counts
+    if (statusCode >= 400) {
+      const currentErrors = this.errorCounts.get(route) || 0
+      this.errorCounts.set(route, currentErrors + 1)
+    }
+
+    // Add metric
+    this.addMetric({
+      name: 'api_response_time',
+      value: responseTime,
+      unit: 'ms',
       timestamp: new Date(),
-      tags
-    });
+      tags: {
+        route,
+        method: req.method,
+        status: statusCode.toString()
+      }
+    })
 
-    // Keep only last 1000 metrics in memory
-    if (this.metrics.length > 1000) {
-      this.metrics = this.metrics.slice(-1000);
+    // Alert on slow requests
+    if (responseTime > 5000) {
+      this.alertSlowRequest(route, responseTime, req.method)
+    }
+
+    // Alert on high error rates
+    this.checkErrorRate(route)
+  }
+
+  // Add custom metric
+  addMetric(metric: PerformanceMetric) {
+    this.metrics.push(metric)
+    
+    // Keep only last 10000 metrics
+    if (this.metrics.length > 10000) {
+      this.metrics = this.metrics.slice(-10000)
     }
   }
 
-  /**
-   * Record API request metrics
-   */
-  recordAPIMetric(metric: APIMetrics): void {
-    this.apiMetrics.push(metric);
+  // Get system health status
+  async getSystemHealth(): Promise<SystemHealth> {
+    const memoryUsage = process.memoryUsage()
+    const uptime = Date.now() - this.startTime
 
-    // Keep only last 1000 API metrics in memory
-    if (this.apiMetrics.length > 1000) {
-      this.apiMetrics = this.apiMetrics.slice(-1000);
+    // Test database connection
+    const dbHealth = await this.testDatabaseConnection()
+    
+    // Test Redis connection
+    const redisHealth = await this.testRedisConnection()
+
+    // Calculate metrics
+    const avgResponseTime = this.getAverageResponseTime()
+    const requestsPerMinute = this.getRequestsPerMinute()
+    const errorRate = this.getErrorRate()
+
+    // Determine overall status
+    let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy'
+    
+    if (dbHealth.status === 'error' || redisHealth.status === 'error') {
+      status = 'unhealthy'
+    } else if (
+      avgResponseTime > 2000 || 
+      errorRate > 0.05 || 
+      memoryUsage.heapUsed / memoryUsage.heapTotal > 0.9
+    ) {
+      status = 'degraded'
     }
-  }
-
-  /**
-   * Get current system metrics
-   */
-  getSystemMetrics(): SystemMetrics {
-    const memUsage = process.memoryUsage();
-    const totalMemory = memUsage.heapTotal + memUsage.external;
-    const usedMemory = memUsage.heapUsed;
 
     return {
-      cpuUsage: process.cpuUsage().user / 1000000, // Convert to seconds
-      memoryUsage: {
-        used: Math.round(usedMemory / 1024 / 1024), // MB
-        total: Math.round(totalMemory / 1024 / 1024), // MB
-        percentage: Math.round((usedMemory / totalMemory) * 100)
+      status,
+      uptime,
+      memory: {
+        used: memoryUsage.heapUsed,
+        total: memoryUsage.heapTotal,
+        percentage: (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100
       },
-      uptime: process.uptime(),
-      requestCount: this.apiMetrics.length,
-      errorRate: this.calculateErrorRate()
-    };
-  }
-
-  /**
-   * Get database performance metrics
-   */
-  async getDatabaseMetrics(): Promise<DatabaseMetrics> {
-    try {
-      // Get recent API metrics for database queries
-      const recentMetrics = this.apiMetrics.filter(
-        m => m.timestamp > new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
-      );
-
-      const queryTimes = recentMetrics.map(m => m.responseTime);
-      const avgQueryTime = queryTimes.length > 0 
-        ? queryTimes.reduce((a, b) => a + b, 0) / queryTimes.length 
-        : 0;
-
-      const slowQueries = queryTimes.filter(time => time > 1000).length; // > 1 second
-
-      return {
-        connectionCount: 1, // Prisma manages connections
-        queryCount: recentMetrics.length,
-        avgQueryTime: Math.round(avgQueryTime),
-        slowQueries
-      };
-    } catch (error) {
-      console.error('Error getting database metrics:', error);
-      return {
-        connectionCount: 0,
-        queryCount: 0,
-        avgQueryTime: 0,
-        slowQueries: 0
-      };
+      cpu: {
+        usage: await this.getCPUUsage()
+      },
+      database: dbHealth,
+      redis: redisHealth,
+      activeConnections: this.getActiveConnections(),
+      requestsPerMinute,
+      errorRate
     }
   }
 
-  /**
-   * Get API endpoint performance summary
-   */
-  getAPIPerformanceSummary(timeWindow: number = 5 * 60 * 1000): Record<string, {
-    count: number;
-    avgResponseTime: number;
-    errorCount: number;
-    errorRate: number;
-  }> {
-    const cutoff = new Date(Date.now() - timeWindow);
-    const recentMetrics = this.apiMetrics.filter(m => m.timestamp > cutoff);
+  // Get performance metrics
+  getMetrics(timeRange?: { start: Date; end: Date }): PerformanceMetric[] {
+    let filteredMetrics = this.metrics
 
-    const endpointStats: Record<string, {
-      count: number;
-      avgResponseTime: number;
-      errorCount: number;
-      errorRate: number;
-    }> = {};
-
-    recentMetrics.forEach(metric => {
-      const key = `${metric.method} ${metric.endpoint}`;
-      
-      if (!endpointStats[key]) {
-        endpointStats[key] = {
-          count: 0,
-          avgResponseTime: 0,
-          errorCount: 0,
-          errorRate: 0
-        };
-      }
-
-      endpointStats[key].count++;
-      endpointStats[key].avgResponseTime += metric.responseTime;
-      
-      if (metric.statusCode >= 400) {
-        endpointStats[key].errorCount++;
-      }
-    });
-
-    // Calculate averages and error rates
-    Object.keys(endpointStats).forEach(key => {
-      const stats = endpointStats[key];
-      if (stats && stats.count > 0) {
-        stats.avgResponseTime = Math.round(stats.avgResponseTime / stats.count);
-        stats.errorRate = Math.round((stats.errorCount / stats.count) * 100);
-      }
-    });
-
-    return endpointStats;
-  }
-
-  /**
-   * Get performance alerts
-   */
-  getPerformanceAlerts(): Array<{
-    type: 'warning' | 'critical';
-    message: string;
-    metric: string;
-    value: number;
-    threshold: number;
-  }> {
-    const alerts = [];
-    const systemMetrics = this.getSystemMetrics();
-
-    // Memory usage alerts
-    if (systemMetrics.memoryUsage.percentage > 90) {
-      alerts.push({
-        type: 'critical' as const,
-        message: 'High memory usage detected',
-        metric: 'memory_usage',
-        value: systemMetrics.memoryUsage.percentage,
-        threshold: 90
-      });
-    } else if (systemMetrics.memoryUsage.percentage > 80) {
-      alerts.push({
-        type: 'warning' as const,
-        message: 'Elevated memory usage',
-        metric: 'memory_usage',
-        value: systemMetrics.memoryUsage.percentage,
-        threshold: 80
-      });
+    if (timeRange) {
+      filteredMetrics = this.metrics.filter(
+        metric => metric.timestamp >= timeRange.start && metric.timestamp <= timeRange.end
+      )
     }
 
-    // Error rate alerts
-    if (systemMetrics.errorRate > 10) {
-      alerts.push({
-        type: 'critical' as const,
-        message: 'High error rate detected',
-        metric: 'error_rate',
-        value: systemMetrics.errorRate,
-        threshold: 10
-      });
-    } else if (systemMetrics.errorRate > 5) {
-      alerts.push({
-        type: 'warning' as const,
-        message: 'Elevated error rate',
-        metric: 'error_rate',
-        value: systemMetrics.errorRate,
-        threshold: 5
-      });
-    }
-
-    return alerts;
+    return filteredMetrics
   }
 
-  /**
-   * Calculate error rate from recent API metrics
-   */
-  private calculateErrorRate(): number {
-    const recentMetrics = this.apiMetrics.filter(
-      m => m.timestamp > new Date(Date.now() - 5 * 60 * 1000) // Last 5 minutes
-    );
-
-    if (recentMetrics.length === 0) return 0;
-
-    const errorCount = recentMetrics.filter(m => m.statusCode >= 400).length;
-    return Math.round((errorCount / recentMetrics.length) * 100);
-  }
-
-  /**
-   * Export metrics for external monitoring systems
-   */
-  exportMetrics(): {
-    system: SystemMetrics;
-    api: Record<string, {
-      count: number;
-      avgResponseTime: number;
-      errorCount: number;
-      errorRate: number;
-    }>;
-    alerts: Array<{
-      type: 'warning' | 'critical';
-      message: string;
-      metric: string;
-      value: number;
-      threshold: number;
-    }>;
-    timestamp: string;
-  } {
+  // Get aggregated metrics
+  getAggregatedMetrics() {
+    const now = new Date()
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000)
+    
+    const recentMetrics = this.getMetrics({ start: oneHourAgo, end: now })
+    
     return {
-      system: this.getSystemMetrics(),
-      api: this.getAPIPerformanceSummary(),
-      alerts: this.getPerformanceAlerts(),
-      timestamp: new Date().toISOString()
-    };
-  }
-
-  /**
-   * Clear old metrics to free memory
-   */
-  clearOldMetrics(olderThan: number = 60 * 60 * 1000): void {
-    const cutoff = new Date(Date.now() - olderThan);
-    
-    this.metrics = this.metrics.filter(m => m.timestamp > cutoff);
-    this.apiMetrics = this.apiMetrics.filter(m => m.timestamp > cutoff);
-  }
-}
-
-// Singleton instance
-export const performanceMonitor = new PerformanceMonitor();
-
-/**
- * Middleware function to track API performance
- */
-export function createPerformanceMiddleware() {
-  return (req: { url?: string; path?: string; method?: string; headers: Record<string, string>; connection?: { remoteAddress?: string } }, res: { send: (data: unknown) => unknown; statusCode?: number }, next: () => void) => {
-    const startTime = Date.now();
-    const originalSend = res.send;
-
-    res.send = function(data: unknown) {
-      const responseTime = Date.now() - startTime;
-      
-      performanceMonitor.recordAPIMetric({
-        endpoint: req.url || req.path || 'unknown',
-        method: req.method || 'GET',
-        responseTime,
-        statusCode: res.statusCode || 200,
-        timestamp: new Date(),
-        userAgent: req.headers['user-agent'],
-        ip: req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.connection?.remoteAddress || 'unknown'
-      });
-
-      return originalSend.call(this, data);
-    };
-
-    next();
-  };
-}
-
-/**
- * Utility function to measure execution time
- */
-export async function measureExecutionTime<T>(
-  name: string,
-  fn: () => Promise<T>,
-  tags?: Record<string, string>
-): Promise<T> {
-  const startTime = Date.now();
-  
-  try {
-    const result = await fn();
-    const executionTime = Date.now() - startTime;
-    
-    performanceMonitor.recordMetric(name, executionTime, 'ms', tags);
-    
-    return result;
-  } catch (error) {
-    const executionTime = Date.now() - startTime;
-    
-    performanceMonitor.recordMetric(name, executionTime, 'ms', {
-      ...tags,
-      error: 'true'
-    });
-    
-    throw error;
-  }
-}
-
-/**
- * Database query performance wrapper
- */
-export async function measureDatabaseQuery<T>(
-  queryName: string,
-  query: () => Promise<T>
-): Promise<T> {
-  return measureExecutionTime(`db_query_${queryName}`, query, {
-    type: 'database'
-  });
-}
-
-/**
- * Performance monitoring configuration
- */
-export const performanceConfig = {
-  // Enable/disable performance monitoring
-  enabled: process.env.NODE_ENV !== 'test',
-  
-  // Metrics retention time (1 hour)
-  metricsRetentionTime: 60 * 60 * 1000,
-  
-  // Alert thresholds
-  thresholds: {
-    memoryUsage: {
-      warning: 80,
-      critical: 90
-    },
-    errorRate: {
-      warning: 5,
-      critical: 10
-    },
-    responseTime: {
-      warning: 1000,
-      critical: 3000
+      averageResponseTime: this.getAverageResponseTime(),
+      p95ResponseTime: this.getPercentileResponseTime(95),
+      p99ResponseTime: this.getPercentileResponseTime(99),
+      requestsPerMinute: this.getRequestsPerMinute(),
+      errorRate: this.getErrorRate(),
+      topSlowRoutes: this.getTopSlowRoutes(),
+      topErrorRoutes: this.getTopErrorRoutes(),
+      memoryTrend: this.getMemoryTrend(),
+      totalRequests: Array.from(this.requestCounts.values()).reduce((a, b) => a + b, 0),
+      totalErrors: Array.from(this.errorCounts.values()).reduce((a, b) => a + b, 0)
     }
   }
-};
 
-// Cleanup old metrics every 10 minutes
-if (performanceConfig.enabled) {
-  setInterval(() => {
-    performanceMonitor.clearOldMetrics(performanceConfig.metricsRetentionTime);
-  }, 10 * 60 * 1000);
+  private normalizeRoute(pathname: string): string {
+    // Normalize dynamic routes
+    return pathname
+      .replace(/\/\d+/g, '/[id]')
+      .replace(/\/[a-f0-9-]{36}/g, '/[uuid]')
+      .replace(/\/[a-zA-Z0-9_-]+@[a-zA-Z0-9.-]+/g, '/[email]')
+  }
+
+  private getAverageResponseTime(): number {
+    if (this.responseTimes.length === 0) return 0
+    return this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length
+  }
+
+  private getPercentileResponseTime(percentile: number): number {
+    if (this.responseTimes.length === 0) return 0
+    
+    const sorted = [...this.responseTimes].sort((a, b) => a - b)
+    const index = Math.ceil((percentile / 100) * sorted.length) - 1
+    return sorted[index] || 0
+  }
+
+  private getRequestsPerMinute(): number {
+    const totalRequests = Array.from(this.requestCounts.values()).reduce((a, b) => a + b, 0)
+    const uptimeMinutes = (Date.now() - this.startTime) / (1000 * 60)
+    return uptimeMinutes > 0 ? totalRequests / uptimeMinutes : 0
+  }
+
+  private getErrorRate(): number {
+    const totalRequests = Array.from(this.requestCounts.values()).reduce((a, b) => a + b, 0)
+    const totalErrors = Array.from(this.errorCounts.values()).reduce((a, b) => a + b, 0)
+    return totalRequests > 0 ? totalErrors / totalRequests : 0
+  }
+
+  private getTopSlowRoutes(): Array<{ route: string; avgTime: number }> {
+    const routeMetrics = new Map<string, number[]>()
+    
+    this.metrics
+      .filter(m => m.name === 'api_response_time')
+      .forEach(metric => {
+        const route = metric.tags?.route || 'unknown'
+        if (!routeMetrics.has(route)) {
+          routeMetrics.set(route, [])
+        }
+        routeMetrics.get(route)!.push(metric.value)
+      })
+
+    return Array.from(routeMetrics.entries())
+      .map(([route, times]) => ({
+        route,
+        avgTime: times.reduce((a, b) => a + b, 0) / times.length
+      }))
+      .sort((a, b) => b.avgTime - a.avgTime)
+      .slice(0, 10)
+  }
+
+  private getTopErrorRoutes(): Array<{ route: string; errorCount: number; errorRate: number }> {
+    return Array.from(this.errorCounts.entries())
+      .map(([route, errorCount]) => ({
+        route,
+        errorCount,
+        errorRate: errorCount / (this.requestCounts.get(route) || 1)
+      }))
+      .sort((a, b) => b.errorRate - a.errorRate)
+      .slice(0, 10)
+  }
+
+  private getMemoryTrend(): Array<{ timestamp: Date; usage: number }> {
+    return this.metrics
+      .filter(m => m.name === 'memory_usage')
+      .slice(-100)
+      .map(m => ({
+        timestamp: m.timestamp,
+        usage: m.value
+      }))
+  }
+
+  private async testDatabaseConnection(): Promise<{ status: 'connected' | 'disconnected' | 'error'; responseTime: number }> {
+    const startTime = Date.now()
+    
+    try {
+      const { prisma } = await import('@/lib/prisma')
+      await prisma.$queryRaw`SELECT 1`
+      
+      return {
+        status: 'connected',
+        responseTime: Date.now() - startTime
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        responseTime: Date.now() - startTime
+      }
+    }
+  }
+
+  private async testRedisConnection(): Promise<{ status: 'connected' | 'disconnected' | 'error'; responseTime: number }> {
+    const startTime = Date.now()
+    
+    try {
+      const { cache } = await import('@/lib/cache/redis')
+      await cache.ping()
+      
+      return {
+        status: 'connected',
+        responseTime: Date.now() - startTime
+      }
+    } catch (error) {
+      return {
+        status: 'error',
+        responseTime: Date.now() - startTime
+      }
+    }
+  }
+
+  private async getCPUUsage(): Promise<number> {
+    // Simple CPU usage estimation
+    const startUsage = process.cpuUsage()
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const endUsage = process.cpuUsage(startUsage)
+    
+    const totalUsage = endUsage.user + endUsage.system
+    return (totalUsage / 100000) // Convert to percentage
+  }
+
+  private getActiveConnections(): number {
+    // This would need to be implemented based on your server setup
+    // For now, return a placeholder
+    return 0
+  }
+
+  private alertSlowRequest(route: string, responseTime: number, method: string) {
+    console.warn(`🐌 Slow request detected: ${method} ${route} took ${responseTime}ms`)
+    
+    // Here you would integrate with your alerting system
+    // e.g., send to Slack, email, PagerDuty, etc.
+  }
+
+  private checkErrorRate(route: string) {
+    const requests = this.requestCounts.get(route) || 0
+    const errors = this.errorCounts.get(route) || 0
+    
+    if (requests > 10 && errors / requests > 0.1) {
+      console.error(`🚨 High error rate detected: ${route} has ${(errors/requests*100).toFixed(1)}% error rate`)
+    }
+  }
+
+  // Memory usage tracking
+  trackMemoryUsage() {
+    const memoryUsage = process.memoryUsage()
+    
+    this.addMetric({
+      name: 'memory_usage',
+      value: memoryUsage.heapUsed,
+      unit: 'bytes',
+      timestamp: new Date(),
+      tags: {
+        type: 'heap_used'
+      }
+    })
+
+    // Alert on high memory usage
+    if (memoryUsage.heapUsed / memoryUsage.heapTotal > 0.9) {
+      console.warn(`⚠️ High memory usage: ${((memoryUsage.heapUsed / memoryUsage.heapTotal) * 100).toFixed(1)}%`)
+    }
+  }
+
+  // Start periodic monitoring
+  startPeriodicMonitoring() {
+    // Track memory usage every 30 seconds
+    setInterval(() => {
+      this.trackMemoryUsage()
+    }, 30000)
+
+    // Clean up old metrics every hour
+    setInterval(() => {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000)
+      this.metrics = this.metrics.filter(m => m.timestamp > oneHourAgo)
+    }, 60 * 60 * 1000)
+  }
+}
+
+// Global performance monitor instance
+export const performanceMonitor = new PerformanceMonitor()
+
+// Start monitoring when module is loaded
+if (typeof window === 'undefined') {
+  performanceMonitor.startPeriodicMonitoring()
 }

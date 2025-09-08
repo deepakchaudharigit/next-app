@@ -7,6 +7,10 @@
  * - Rate limit reset functionality
  */
 
+// Unmock rate limiting for this test
+jest.unmock('@/lib/rate-limiting')
+jest.unmock('../../../lib/rate-limiting')
+
 import { NextRequest } from 'next/server'
 import { POST as testLoginPost } from '../../../app/api/auth/test-login/route'
 import { GET as rateLimitGet, DELETE as rateLimitDelete, POST as rateLimitReset } from '../../../app/api/auth/rate-limit/route'

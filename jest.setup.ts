@@ -1,6 +1,38 @@
 import '@testing-library/jest-dom'
 import { TextEncoder, TextDecoder } from 'util'
 
+// Setup DOM environment for jsdom
+if (typeof window !== 'undefined') {
+  // Mock window.matchMedia
+  Object.defineProperty(window, 'matchMedia', {
+    writable: true,
+    value: jest.fn().mockImplementation(query => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: jest.fn(), // deprecated
+      removeListener: jest.fn(), // deprecated
+      addEventListener: jest.fn(),
+      removeEventListener: jest.fn(),
+      dispatchEvent: jest.fn(),
+    })),
+  })
+
+  // Mock window.ResizeObserver
+  global.ResizeObserver = jest.fn().mockImplementation(() => ({
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  }))
+
+  // Mock IntersectionObserver
+  global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+    observe: jest.fn(),
+    unobserve: jest.fn(),
+    disconnect: jest.fn(),
+  }))
+}
+
 // Set up test environment variables
 process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test'
 process.env.NEXTAUTH_SECRET = 'test-secret-key-for-testing-purposes-only'
@@ -177,6 +209,7 @@ const mockPrismaClient = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
     count: jest.fn(),
     upsert: jest.fn(),
   },
@@ -186,6 +219,7 @@ const mockPrismaClient = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   session: {
     findUnique: jest.fn(),
@@ -193,6 +227,7 @@ const mockPrismaClient = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   userSession: {
     findUnique: jest.fn(),
@@ -200,6 +235,7 @@ const mockPrismaClient = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   passwordReset: {
     findUnique: jest.fn(),
@@ -207,21 +243,25 @@ const mockPrismaClient = {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   auditLog: {
     create: jest.fn(),
     findMany: jest.fn(),
+    deleteMany: jest.fn(),
   },
   voicebotCall: {
     findMany: jest.fn(),
     create: jest.fn(),
     createMany: jest.fn(),
     count: jest.fn(),
+    deleteMany: jest.fn(),
   },
   report: {
     findMany: jest.fn(),
     create: jest.fn(),
     delete: jest.fn(),
+    deleteMany: jest.fn(),
   },
   systemConfig: {
     findUnique: jest.fn(),
@@ -229,6 +269,7 @@ const mockPrismaClient = {
     create: jest.fn(),
     update: jest.fn(),
     upsert: jest.fn(),
+    deleteMany: jest.fn(),
   },
   $transaction: jest.fn(),
   $disconnect: jest.fn(),
@@ -266,6 +307,42 @@ jest.mock('@/lib/prisma', () => ({
   usePrisma: jest.fn(() => mockPrismaClient),
   checkPrismaConnection: jest.fn().mockResolvedValue(true),
 }))
+
+// Mock rate limiting functions
+const mockRateLimiter = {
+  checkStatus: jest.fn().mockReturnValue({ allowed: true, remaining: 5, resetTime: new Date(), totalAttempts: 0, blocked: false }),
+  checkLimit: jest.fn().mockReturnValue({ allowed: true, remaining: 4, resetTime: new Date(), totalAttempts: 1, blocked: false }),
+  recordFailedAttempt: jest.fn().mockReturnValue({ allowed: false, remaining: 0, resetTime: new Date(), totalAttempts: 5, blocked: true }),
+  recordSuccessfulAttempt: jest.fn(),
+  isBlocked: jest.fn().mockReturnValue(false),
+  reset: jest.fn(),
+  resetAll: jest.fn(),
+  getStats: jest.fn().mockReturnValue({ totalTrackedIdentifiers: 0, blockedIdentifiers: 0, totalAttempts: 0, oldestAttempt: null }),
+  stopCleanup: jest.fn(),
+}
+
+jest.mock('@/lib/rate-limiting', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => mockRateLimiter),
+  authRateLimiter: mockRateLimiter,
+  checkAuthRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
+  recordFailedAuth: jest.fn().mockResolvedValue(undefined),
+  recordSuccessfulAuth: jest.fn().mockResolvedValue(undefined),
+  isAuthBlocked: jest.fn().mockResolvedValue(false),
+  createRateLimitError: jest.fn().mockReturnValue({
+    success: false,
+    error: 'Too many authentication attempts. Please try again later.',
+    code: 'RATE_LIMITED',
+    rateLimitInfo: {
+      remaining: 0,
+      resetTime: new Date().toISOString(),
+      totalAttempts: 5,
+      retryAfter: 900
+    }
+  }),
+}))
+
+// Note: Auth functions are not globally mocked to allow individual tests to mock them as needed
 
 jest.mock('next-auth/react', () => ({
   useSession: jest.fn(() => ({
