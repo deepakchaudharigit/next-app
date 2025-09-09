@@ -81,9 +81,9 @@ npcl-dashboard/
    Update the `.env` file with your configuration:
 
    ```env
-   DATABASE_URL="postgresql://username:password@localhost:5432/npcl_dashboard"
-   NEXTAUTH_SECRET="your-secret-key-here-make-it-long-and-random"
-   NEXTAUTH_URL="http://localhost:3000"
+   DATABASE_URL=\"postgresql://username:password@localhost:5432/npcl_dashboard\"
+   NEXTAUTH_SECRET=\"your-secret-key-here-make-it-long-and-random\"
+   NEXTAUTH_URL=\"http://localhost:3000\"
    ```
 4. **Set up the database**
 
@@ -184,6 +184,45 @@ npm run test:watch
 # Run tests with coverage
 npm run test:coverage
 ```
+
+### Test Coverage
+
+The project includes comprehensive test coverage for:
+
+- **Authentication**: Login, registration, JWT handling, NextAuth configuration
+- **Authorization**: Role-based access control (RBAC), permissions
+- **API Routes**: All authentication endpoints, rate limiting, error handling
+- **Components**: LoginForm validation, user interactions, accessibility
+- **Utilities**: Password hashing, validation schemas, rate limiting logic
+- **Middleware**: Authentication middleware, route protection
+- **Integration**: Database operations with proper mocking
+
+## Development History & Fixes Applied
+
+### Test Suite Improvements
+The project underwent comprehensive test suite improvements to ensure reliability:
+
+- **Fixed Authentication Tests**: Resolved mock conflicts and import path issues
+- **Enhanced NextAuth Integration**: Proper JWT callback handling and session management
+- **Improved Rate Limiting Tests**: Fixed mock setup and integration testing
+- **Component Testing**: Resolved React component testing with proper jsdom environment
+- **Mock Architecture**: Implemented proper mock isolation and dependency management
+- **Test Cleanup**: Removed skipped tests and external dependencies for faster execution
+
+### TypeScript Build Fixes
+Multiple TypeScript compilation issues were resolved:
+
+- **Cache Import Errors**: Fixed module import paths for cache middleware
+- **Missing Dependencies**: Replaced external dependencies with custom implementations
+- **Type Safety**: Added proper null checks and type assertions
+- **Touch Events**: Enhanced mobile touch event handling with safety checks
+- **Image Optimization**: Improved type safety for image element properties
+
+### Performance Optimizations
+- **Lazy Loading**: Implemented component lazy loading with error boundaries
+- **Image Optimization**: Added optimized image components with intersection observer
+- **Touch Optimization**: Enhanced mobile touch interactions
+- **Cache Management**: Implemented Redis caching with proper error handling
 
 ## Deployment
 

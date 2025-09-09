@@ -248,6 +248,7 @@ const mockPrismaClient = {
   auditLog: {
     create: jest.fn(),
     findMany: jest.fn(),
+    findFirst: jest.fn(),
     deleteMany: jest.fn(),
   },
   voicebotCall: {
@@ -308,6 +309,45 @@ jest.mock('@/lib/prisma', () => ({
   checkPrismaConnection: jest.fn().mockResolvedValue(true),
 }))
 
+// Mock lib/prisma without the @ prefix (for @lib/prisma imports)
+jest.mock('@lib/prisma', () => ({
+  prisma: mockPrismaClient,
+  serverPrisma: mockPrismaClient,
+  usePrisma: jest.fn(() => mockPrismaClient),
+  checkPrismaConnection: jest.fn().mockResolvedValue(true),
+}))
+
+// Mock auth config to avoid environment variable issues
+jest.mock('@config/auth', () => ({
+  authConfig: {
+    bcrypt: {
+      saltRounds: 12,
+    },
+    jwt: {
+      secret: 'test-secret',
+      expiresIn: '24h',
+    },
+    session: {
+      maxAge: 86400,
+      updateAge: 3600,
+    },
+    password: {
+      minLength: 6,
+      requireUppercase: false,
+      requireLowercase: false,
+      requireNumbers: false,
+      requireSpecialChars: false,
+    },
+    rateLimit: {
+      windowMs: 60000,
+      maxAttempts: 3,
+    },
+  },
+}))
+
+// Note: Auth functions are not globally mocked to allow individual tests to mock them as needed
+// Each test file should mock @lib/auth and @/lib/auth as required
+
 // Mock rate limiting functions
 const mockRateLimiter = {
   checkStatus: jest.fn().mockReturnValue({ allowed: true, remaining: 5, resetTime: new Date(), totalAttempts: 0, blocked: false }),
@@ -340,6 +380,76 @@ jest.mock('@/lib/rate-limiting', () => ({
       retryAfter: 900
     }
   }),
+}))
+
+// Mock lib/rate-limiting without the @ prefix (for @lib/rate-limiting imports)
+jest.mock('@lib/rate-limiting', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => mockRateLimiter),
+  authRateLimiter: mockRateLimiter,
+  checkAuthRateLimit: jest.fn().mockResolvedValue({ allowed: true }),
+  recordFailedAuth: jest.fn().mockResolvedValue(undefined),
+  recordSuccessfulAuth: jest.fn().mockResolvedValue(undefined),
+  isAuthBlocked: jest.fn().mockResolvedValue(false),
+  createRateLimitError: jest.fn().mockReturnValue({
+    success: false,
+    error: 'Too many authentication attempts. Please try again later.',
+    code: 'RATE_LIMITED',
+    rateLimitInfo: {
+      remaining: 0,
+      resetTime: new Date().toISOString(),
+      totalAttempts: 5,
+      retryAfter: 900
+    }
+  }),
+}))
+
+// Mock lib/nextauth without the @ prefix (for @lib/nextauth imports)
+// Note: This is a minimal mock - individual tests should provide more detailed mocks if needed
+jest.mock('@lib/nextauth', () => ({
+  authOptions: {
+    providers: [
+      {
+        name: 'credentials',
+        type: 'credentials',
+        authorize: jest.fn().mockResolvedValue(null),
+      }
+    ],
+    session: { strategy: 'jwt' },
+    pages: {
+      signIn: '/auth/login',
+      error: '/auth/error',
+    },
+    callbacks: {
+      jwt: jest.fn().mockImplementation(async ({ token, user, trigger, session }) => {
+        if (user) {
+          token.id = user.id
+          token.role = user.role
+        }
+        if (trigger === 'update' && session) {
+          // Update token with session data
+          if (session.user.name) token.name = session.user.name
+          if (session.user.email) token.email = session.user.email
+        }
+        return token
+      }),
+      session: jest.fn().mockImplementation(async ({ session, token }) => {
+        session.user.id = token.id
+        session.user.role = token.role
+        return session
+      }),
+      signIn: jest.fn().mockResolvedValue(true),
+      redirect: jest.fn().mockImplementation(async ({ url, baseUrl }) => {
+        if (url.startsWith('/')) {
+          return `${baseUrl}${url}`
+        }
+        if (url.startsWith(baseUrl)) {
+          return url
+        }
+        return `${baseUrl}/dashboard`
+      }),
+    },
+  },
 }))
 
 // Note: Auth functions are not globally mocked to allow individual tests to mock them as needed

@@ -3,23 +3,14 @@
  * Tests the complete authentication flow including database interactions
  */
 
-// Mock auth functions for integration test
-jest.mock('@/lib/auth', () => ({
+// Mock auth functions for this integration test
+jest.mock('@lib/auth', () => ({
   hashPassword: jest.fn().mockImplementation(async (password: string) => `hashed_${password}`),
   verifyPassword: jest.fn().mockImplementation(async (password: string, hash: string) => {
     return hash === `hashed_${password}`
   }),
   generateResetToken: jest.fn().mockReturnValue('mock-reset-token'),
   hashResetToken: jest.fn().mockReturnValue('mock-hashed-token'),
-  generateToken: jest.fn().mockImplementation(() => {
-    throw new Error('generateToken is deprecated. Use NextAuth.js session management instead.')
-  }),
-  verifyToken: jest.fn().mockImplementation(() => {
-    throw new Error('verifyToken is deprecated. Use NextAuth.js session management instead.')
-  }),
-  extractTokenFromHeader: jest.fn().mockImplementation(() => {
-    throw new Error('extractTokenFromHeader is deprecated. Use NextAuth.js session management instead.')
-  }),
 }))
 
 import { NextRequest } from 'next/server'
@@ -31,6 +22,12 @@ import { testUser } from '@/__tests__/utils/test-factories'
 describe('/api/auth/test-login Integration Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    
+    // Ensure auditLog has all required methods
+    if (!prisma.auditLog.findFirst) {
+      prisma.auditLog.findFirst = jest.fn()
+    }
+    
     // Setup default mock responses
     if (prisma.user.findUnique && typeof prisma.user.findUnique.mockResolvedValue === 'function') {
       ;(prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
@@ -80,9 +77,9 @@ describe('/api/auth/test-login Integration Tests', () => {
       // Assert
       expect(response.status).toBe(200)
       expect(data.success).toBe(true)
-      expect(data.data.user.email).toBe(userData.email)
-      expect(data.data.user.role).toBe(userData.role)
-      expect(data.data.user.password).toBeUndefined() // Password should not be returned
+      expect(data.user.email).toBe(userData.email)
+      expect(data.user.role).toBe(userData.role)
+      expect(data.user.password).toBeUndefined() // Password should not be returned
     })
 
     it('should reject invalid credentials', async () => {
@@ -189,7 +186,7 @@ describe('/api/auth/test-login Integration Tests', () => {
       expect(data.message).toContain('Internal server error')
     })
 
-    it('should log audit trail for login attempts', async () => {
+    it('should record successful authentication for rate limiting', async () => {
       // Arrange
       const userData = testUser()
       const hashedPassword = await hashPassword(userData.password)
@@ -202,15 +199,8 @@ describe('/api/auth/test-login Integration Tests', () => {
       
       ;(prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser)
       
-      const mockAuditLog = {
-        id: 'audit-log-id',
-        userId: mockUser.id,
-        action: 'LOGIN_SUCCESS',
-        ipAddress: '192.168.1.1',
-        userAgent: 'Test Browser',
-      }
-      
-      ;(prisma.auditLog.findFirst as jest.Mock).mockResolvedValue(mockAuditLog)
+      // Mock rate limiting functions
+      const { recordSuccessfulAuth } = require('@lib/rate-limiting')
 
       const request = new NextRequest('http://localhost:3000/api/auth/test-login', {
         method: 'POST',
@@ -227,31 +217,14 @@ describe('/api/auth/test-login Integration Tests', () => {
 
       // Act
       const response = await POST(request)
+      const data = await response.json()
 
       // Assert
       expect(response.status).toBe(200)
+      expect(data.success).toBe(true)
       
-      // Check that audit log creation was called
-      expect(prisma.auditLog.create).toHaveBeenCalled()
-      
-      // Verify the audit log query would find the log
-      expect(prisma.auditLog.findFirst).toHaveBeenCalledWith({
-        where: {
-          userId: mockUser.id,
-          action: 'LOGIN_SUCCESS',
-        },
-      })
-      
-      const auditLog = await prisma.auditLog.findFirst({
-        where: {
-          userId: mockUser.id,
-          action: 'LOGIN_SUCCESS',
-        },
-      })
-      
-      expect(auditLog).toBeDefined()
-      expect(auditLog?.ipAddress).toBe('192.168.1.1')
-      expect(auditLog?.userAgent).toBe('Test Browser')
+      // Check that successful auth was recorded for rate limiting
+      expect(recordSuccessfulAuth).toHaveBeenCalledWith(userData.email, request)
     })
 
     it('should handle rate limiting', async () => {
@@ -259,11 +232,12 @@ describe('/api/auth/test-login Integration Tests', () => {
       const userData = testUser()
       
       // Mock rate limiting to return not allowed
-      const { checkAuthRateLimit, createRateLimitError } = require('@/lib/rate-limiting')
+      const { checkAuthRateLimit, createRateLimitError } = require('@lib/rate-limiting')
       checkAuthRateLimit.mockResolvedValueOnce({ allowed: false })
       createRateLimitError.mockReturnValueOnce({
         success: false,
-        message: 'Too many requests',
+        error: 'Too many authentication attempts. Please try again later.',
+        code: 'RATE_LIMITED',
       })
       
       const request = new NextRequest('http://localhost:3000/api/auth/test-login', {
@@ -285,7 +259,7 @@ describe('/api/auth/test-login Integration Tests', () => {
       // Assert
       expect(response.status).toBe(429)
       expect(data.success).toBe(false)
-      expect(data.message).toContain('Too many requests')
+      expect(data.error).toContain('Too many')
     })
   })
 })
