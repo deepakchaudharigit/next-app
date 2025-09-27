@@ -1,51 +1,167 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Environment variables
+# ========================================
+# SECURITY & SENSITIVE FILES
+# ========================================
+
+# Environment variables (CRITICAL - Never commit these!)
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 .env*.local
+.env.backup
+.env.example.local
 
-# Dependencies
+# Database credentials and connection strings
+database.url
+db.config
+*.db-url
+
+# Authentication secrets
+auth.secret
+*.secret
+*.key
+*.pem
+*.p12
+*.pfx
+jwt.secret
+nextauth.secret
+
+# API keys and tokens
+api-keys.json
+*.api-key
+tokens.json
+credentials.json
+service-account.json
+
+# SSL certificates and private keys
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+ssl/
+certs/
+
+# Configuration files with sensitive data
+config.production.js
+config.staging.js
+*.config.secret.*
+
+# ========================================
+# DEPENDENCIES & PACKAGE MANAGERS
+# ========================================
+
+# Node.js dependencies
 /node_modules
 /.pnp
 .pnp.js
 .pnp.loader.mjs
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# npm
+.npm
+.npmrc.local
+
+# ========================================
+# BUILD OUTPUTS & ARTIFACTS
+# ========================================
+
+# Next.js build outputs
+/.next/
+/out/
+/.next-build/
+/build
+/dist
+
+# Static exports
+/export
+
+# Vercel deployment
+.vercel
+.vercel.json
+
+# Production builds
+/production
+/staging
+
+# Bundle analyzer outputs
+.next-bundle-analyzer/
+bundle-analyzer-report.html
+
+# ========================================
+# DEVELOPMENT & TESTING
+# ========================================
 
 # Testing
 /coverage
 /test-results/
 /playwright-report/
 /playwright/.cache/
+*.lcov
+.nyc_output
 
-# Next.js
-/.next/
-/out/
+# Jest
+jest-coverage/
+__coverage__/
 
-# Production
-/build
+# Cypress
+cypress/videos
+cypress/screenshots
+cypress/downloads
 
-# Vercel
-.vercel
+# ========================================
+# TYPESCRIPT & COMPILATION
+# ========================================
 
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+*.d.ts.map
+
+# TypeScript cache
+.tscache/
+
+# ========================================
+# DATABASE & PRISMA
+# ========================================
 
 # Prisma
 /prisma/migrations/
 /prisma/dev.db
 /prisma/dev.db-journal
+/prisma/*.db
+/prisma/*.db-journal
+/prisma/*.sqlite
+/prisma/*.sqlite3
+
+# Database dumps and backups (but allow schema files)
+*.dump
+*.backup
+database-backup/
+db-dumps/
+*-dump.sql
+*-backup.sql
+data-*.sql
+export-*.sql
+
+# ========================================
+# LOGS & MONITORING
+# ========================================
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+lerna-debug.log*
 
 # Runtime data
 pids
@@ -53,45 +169,294 @@ pids
 *.seed
 *.pid.lock
 
+# Application logs
+app.log
+error.log
+access.log
+debug.log
+
+# PM2 logs
+.pm2/
+
+# ========================================
+# CACHE & TEMPORARY FILES
+# ========================================
+
 # Cache directories
+.cache/
 .npm
 .eslintcache
 .parcel-cache
+.swc/
+.turbo/
 
-# Optional npm cache directory
-.npm
+# Temporary folders
+tmp/
+temp/
+.tmp/
+.temp/
 
-# Optional REPL history
-.node_repl_history
-
-# IDE and Editors
-.vscode/
-.idea/
+# OS temporary files
+*.tmp
+*.temp
 *.swp
 *.swo
 *~
 
-# OS Generated files
+# ========================================
+# IDE & EDITORS
+# ========================================
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IntelliJ IDEA / WebStorm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# ========================================
+# OPERATING SYSTEM FILES
+# ========================================
+
+# macOS
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
+.AppleDouble
+.LSOverride
+Icon?
+
+# Windows
 ehthumbs.db
 Thumbs.db
+Thumbs.db:encryptable
+*.lnk
 
-# Certificates
-*.pem
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
 
-# Temporary folders
-tmp/
-temp/
+# ========================================
+# DOCKER & CONTAINERS
+# ========================================
 
-# Auth secrets (if you have any local auth files)
-auth.secret
+# Docker
+.dockerignore.local
+docker-compose.override.yml
+docker-compose.local.yml
+.docker/
+
+# Container volumes
+volumes/
+data/
+
+# ========================================
+# CLOUD & DEPLOYMENT
+# ========================================
+
+# AWS
+.aws/
+aws-exports.js
+
+# Google Cloud
+.gcloud/
+gcloud-key.json
+
+# Azure
+.azure/
+
+# Heroku
+.heroku/
+
+# Netlify
+.netlify/
+
+# ========================================
+# MONITORING & ANALYTICS
+# ========================================
+
+# Lighthouse reports
+lighthouse-report.html
+lighthouse-report.json
+
+# Bundle analysis
+bundle-report.html
+webpack-bundle-analyzer-report.html
+
+# Performance monitoring
+.performance/
+performance-reports/
+
+# ========================================
+# BACKUP & ARCHIVE FILES
+# ========================================
+
+# Backup files
+*.backup
+*.bak
+*.old
+*.orig
+*.save
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+# ========================================
+# PROJECT SPECIFIC (NPCL Dashboard)
+# ========================================
+
+# Local development scripts
+dev-scripts/
+local-scripts/
+
+# Test data
+test-data/
+mock-data/
+sample-data/
+
+# Documentation drafts
+docs/drafts/
+*.draft.md
+
+# Local configuration
+local.config.js
+local.config.json
+
+# Redis dumps
+dump.rdb
+*.rdb
+
+# PostgreSQL dumps
+*.pgdump
+*.psql
+
+# Reports and exports
+exports/
+reports/generated/
+*.csv.local
+*.xlsx.local
+
+# ========================================
+# SECURITY SCANNING & TOOLS
+# ========================================
+
+# Security scan results
+.security/
+security-reports/
+vulnerability-reports/
+
+# Dependency check results
+dependency-check-report.html
+.snyk
+
+# ========================================
+# MISCELLANEOUS
+# ========================================
 
 # Local development
 .local
+.dev
 
 # Storybook build outputs
 /storybook-static
+
+# Optional REPL history
+.node_repl_history
+
+# ESLint cache
+.eslintcache
+
+# Stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional stylelint cache
+.stylelintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# FUSE-specific
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+# ========================================
+# CUSTOM ADDITIONS FOR THIS PROJECT
+# ========================================
+
+# Qodo AI generated files (CONTAINS SENSITIVE DATA - ALWAYS IGNORE)
+.qodo/
+qodo.md
+.qodo-*
+qodo-*
+
+# Configuration backups
+configuration.toml.save
+*.config.backup
+
+# Local development certificates
+localhost.pem
+localhost-key.pem
+
+# Local database files
+*.local.db
+*.dev.db
+
+# End of .gitignore
