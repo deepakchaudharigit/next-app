@@ -1,9 +1,12 @@
 # NPCL Next-Auth
 
+## Register Page
 <img width="2852" height="1606" alt="image" src="https://github.com/user-attachments/assets/c197e4c7-974c-4f88-afbc-342ec12a3dba" />
 
+## Login Page
 <img width="2876" height="1612" alt="image" src="https://github.com/user-attachments/assets/cb0a8a15-86e2-4d38-85cf-b79553ee36fc" />
 
+## Forgot Password Page
 <img width="2880" height="1610" alt="image" src="https://github.com/user-attachments/assets/3016b784-5f6c-4b3c-b186-c8544a1d28ee" />
 
 A comprehensive Power Management Dashboard for NPCL built with Next.js 14, TypeScript, Prisma, and PostgreSQL.
